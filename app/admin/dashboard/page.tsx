@@ -1,10 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { 
-  ChevronDown, 
   Loader2, 
   MessageSquare, 
   ThumbsUp, 
@@ -41,7 +39,6 @@ type PeriodOption = '7' | '30' | '90' | '180' | '365'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(true)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [period, setPeriod] = useState<PeriodOption>('90')

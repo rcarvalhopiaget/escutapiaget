@@ -1,428 +1,502 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { ChevronLeft, Save, Trash2, Loader2, Info } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { Loader2, ChevronLeft, Clock, Calendar, User, Mail, MessageSquare, FileText } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Toaster } from '@/components/ui/sonner'
+import { Separator } from '@/components/ui/separator'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { Toaster } from '@/components/ui/sonner'
 
-import { Ticket, TicketStatus, TicketType } from '@/app/types/ticket'
+import { Ticket } from '@/app/types/ticket'
 
-// A função principal agora serve como wrapper
-export default function TicketEditPageWrapper({ params }: { params: any }) {
-  // Em um componente cliente, não usamos use() diretamente
-  // Em vez disso, vamos passar params como prop para o componente interno
-  return <TicketEditPage paramsId={params?.id} />
+// Mapeia tipos de chamado para nomes mais amigáveis e cores
+const typeMap: Record<string, { label: string, color: string }> = {
+  'reclamacao': { label: 'Reclamação', color: '#f97316' },
+  'denuncia': { label: 'Denúncia', color: '#ef4444' },
+  'sugestao': { label: 'Sugestão', color: '#22c55e' },
+  'duvida': { label: 'Dúvida', color: '#3b82f6' },
+  'privacidade': { label: 'Privacidade', color: '#8b5cf6' }
 }
 
-// Componente interno separado que recebe o ID como string
-function TicketEditPage({ paramsId }: { paramsId: string }) {
+// Mapeia status para cores e nomes mais amigáveis
+const statusMap: Record<string, { label: string, color: string, bgColor: string }> = {
+  'aberto': { label: 'Aberto', color: '#0369a1', bgColor: '#e0f2fe' },
+  'em_analise': { label: 'Em Análise', color: '#854d0e', bgColor: '#fef9c3' },
+  'respondido': { label: 'Respondido', color: '#166534', bgColor: '#dcfce7' },
+  'encaminhado': { label: 'Encaminhado', color: '#581c87', bgColor: '#f3e8ff' },
+  'resolvido': { label: 'Resolvido', color: '#475569', bgColor: '#f1f5f9' }
+}
+
+// Opções de status para o select
+const statusOptions = [
+  { value: 'aberto', label: 'Aberto' },
+  { value: 'em_analise', label: 'Em Análise' },
+  { value: 'respondido', label: 'Respondido' },
+  { value: 'encaminhado', label: 'Encaminhado' },
+  { value: 'resolvido', label: 'Resolvido' }
+]
+
+export default function TicketDetailsPage() {
+  const params = useParams()
   const router = useRouter()
-  const ticketId = paramsId || 'novo'
-  const isNewTicket = ticketId === 'novo'
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  
-  const [ticket, setTicket] = useState<Ticket>({
-    id: '',
-    protocol: '',
-    type: TicketType.DUVIDA,
-    category: '',
-    status: TicketStatus.ABERTO,
-    name: '',
-    email: '',
-    message: '',
-    response: '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  })
+  const [ticket, setTicket] = useState<Ticket | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [statusLoading, setStatusLoading] = useState(false)
+  const [responseLoading, setResponseLoading] = useState(false)
+  const [response, setResponse] = useState('')
+  const [internalComments, setInternalComments] = useState('')
+  const [currentStatus, setCurrentStatus] = useState<string>('')
 
   useEffect(() => {
-    if (isNewTicket) {
-      // Gerar novo protocolo para novos tickets
-      const date = new Date()
-      const day = date.getDate().toString().padStart(2, '0')
-      const month = (date.getMonth() + 1).toString().padStart(2, '0')
-      const year = date.getFullYear().toString().substring(2)
-      const hours = date.getHours().toString().padStart(2, '0')
-      const minutes = date.getMinutes().toString().padStart(2, '0')
-      const seconds = date.getSeconds().toString().padStart(2, '0')
-      
-      const protocol = `${day}${month}${year}-${hours}${minutes}${seconds}`
-      
-      setTicket(prev => ({
-        ...prev,
-        protocol
-      }))
-      
-      setIsLoading(false)
-      return
-    }
-    
-    // Buscar dados do chamado existente
-    const fetchTicket = async () => {
+    async function loadTicket() {
       try {
-        const response = await fetch(`/api/admin/tickets/${ticketId}`)
-        const data = await response.json()
+        setLoading(true)
+        const response = await fetch(`/api/admin/tickets/${params.id}`)
         
         if (!response.ok) {
-          throw new Error(data.error || 'Erro ao carregar chamado')
+          toast.error('Erro ao carregar chamado')
+          return
+        }
+        
+        const data = await response.json()
+        
+        if (!data.success) {
+          toast.error(data.error || 'Chamado não encontrado')
+          return
         }
         
         setTicket(data.ticket)
+        setCurrentStatus(data.ticket.status)
       } catch (error) {
-        console.error('Erro ao carregar chamado:', error)
-        toast.error('Erro ao carregar chamado', {
-          description: 'Não foi possível obter os dados do chamado'
-        })
+        console.error('Erro ao carregar detalhes do chamado:', error)
+        toast.error('Erro ao carregar detalhes do chamado')
       } finally {
-        setIsLoading(false)
+        setLoading(false)
       }
     }
     
-    fetchTicket()
-  }, [ticketId, isNewTicket])
+    loadTicket()
+  }, [params.id])
 
-  const handleChange = (
-    field: keyof Ticket,
-    value: string | TicketType | TicketStatus
-  ) => {
-    setTicket(prev => {
-      // Se o campo sendo alterado é a resposta e está sendo preenchido
-      if (field === 'response' && 
-          typeof value === 'string' && 
-          value.trim() !== '' && 
-          prev.status !== TicketStatus.ENCAMINHADO) {
-        // Atualiza automaticamente o status para respondido
-        return { ...prev, [field]: value, status: TicketStatus.RESPONDIDO }
-      }
-      return { ...prev, [field]: value }
-    })
-  }
-
-  const handleSave = async () => {
+  const handleStatusChange = async (status: string) => {
+    if (!ticket || status === ticket.status) return
+    
     try {
-      setIsSaving(true)
-      
-      // Validar os campos obrigatórios
-      if (!ticket.protocol || !ticket.type || !ticket.status || !ticket.message) {
-        toast.error('Preencha todos os campos obrigatórios')
-        return
-      }
-      
-      // Definir a URL e método com base em novo chamado ou edição
-      const url = isNewTicket 
-        ? '/api/admin/tickets' 
-        : `/api/admin/tickets/${ticketId}`
-      
-      const method = isNewTicket ? 'POST' : 'PUT'
-      
-      // Enviar solicitação
-      const response = await fetch(url, {
-        method,
+      setStatusLoading(true)
+      const response = await fetch(`/api/admin/tickets/${ticket.id}/status`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(ticket)
+        body: JSON.stringify({ 
+          status, 
+          internalComments 
+        })
       })
       
       const data = await response.json()
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao salvar chamado')
+      if (!data.success) {
+        toast.error(data.error || 'Erro ao atualizar status')
+        return
       }
       
-      toast.success(
-        isNewTicket ? 'Chamado criado com sucesso' : 'Chamado atualizado com sucesso'
-      )
-      
-      // Redirecionar para a lista de chamados após um tempo
-      setTimeout(() => {
-        router.push('/admin')
-      }, 1500)
+      toast.success('Status atualizado com sucesso')
+      setTicket({
+        ...ticket,
+        status
+      })
+      setCurrentStatus(status)
+      setInternalComments('')
     } catch (error) {
-      console.error('Erro ao salvar chamado:', error)
-      toast.error('Erro ao salvar chamado')
+      console.error('Erro ao atualizar status:', error)
+      toast.error('Erro ao atualizar status')
     } finally {
-      setIsSaving(false)
+      setStatusLoading(false)
     }
   }
 
-  const handleDelete = async () => {
+  const handleResponseSubmit = async () => {
+    if (!ticket || !response) return
+    
     try {
-      setIsDeleting(true)
-      
-      const response = await fetch(`/api/admin/tickets/${ticketId}`, {
-        method: 'DELETE'
+      setResponseLoading(true)
+      const result = await fetch(`/api/admin/tickets/${ticket.id}/response`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ response })
       })
       
-      const data = await response.json()
+      const data = await result.json()
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao excluir chamado')
+      if (!data.success) {
+        toast.error(data.error || 'Erro ao enviar resposta')
+        return
       }
       
-      toast.success('Chamado excluído com sucesso')
-      
-      // Redirecionar para a lista de chamados após um tempo
-      setTimeout(() => {
-        router.push('/admin')
-      }, 1500)
+      toast.success('Resposta enviada com sucesso')
+      setTicket({
+        ...ticket,
+        status: 'respondido',
+        response,
+        responseDate: new Date().toISOString()
+      })
+      setCurrentStatus('respondido')
+      setResponse('')
     } catch (error) {
-      console.error('Erro ao excluir chamado:', error)
-      toast.error('Erro ao excluir chamado')
+      console.error('Erro ao enviar resposta:', error)
+      toast.error('Erro ao enviar resposta')
     } finally {
-      setIsDeleting(false)
-      setShowDeleteDialog(false)
+      setResponseLoading(false)
     }
   }
 
-  const handleCancel = () => {
-    router.push('/admin')
+  const formatMessageContent = (message: string) => {
+    if (!message) return ''
+    
+    // Verifica se é uma resposta de formulário dinâmico
+    if (message.startsWith('Respostas do formulário:')) {
+      try {
+        // Tenta extrair as respostas como JSON
+        const jsonStartIndex = message.indexOf('{')
+        if (jsonStartIndex !== -1) {
+          const jsonStr = message.substring(jsonStartIndex)
+          const formData = JSON.parse(jsonStr)
+          
+          return (
+            <div className="space-y-3">
+              <p className="font-medium">Respostas do formulário:</p>
+              {Object.entries(formData).map(([question, answer], index) => (
+                <div key={index} className="pl-4 border-l-2 border-neutral-200">
+                  <p className="font-medium text-neutral-700">{question}</p>
+                  <p className="text-neutral-600">{String(answer)}</p>
+                </div>
+              ))}
+            </div>
+          )
+        }
+      } catch (error) {
+        // Se falhar em parsear o JSON, exibe como texto normal
+        console.error('Erro ao parsear respostas do formulário:', error)
+      }
+    }
+    
+    // Caso contrário, retorna a mensagem normal com quebras de linha
+    return (
+      <div className="whitespace-pre-wrap">{message}</div>
+    )
   }
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="container max-w-4xl py-10 flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
-        <span className="ml-2 text-neutral-500">Carregando chamado...</span>
+      <div className="flex flex-col items-center justify-center min-h-[500px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-neutral-600">Carregando detalhes do chamado...</p>
       </div>
     )
   }
 
-  return (
-    <div className="container max-w-4xl py-10">
-      <div className="mb-6">
-        <Button variant="ghost" onClick={handleCancel}>
+  if (!ticket) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[500px]">
+        <p className="text-neutral-600 mb-4">Chamado não encontrado</p>
+        <Button onClick={() => router.push('/admin/chamados')}>
           <ChevronLeft className="h-4 w-4 mr-2" />
-          Voltar para chamados
+          Voltar para a lista
         </Button>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>{isNewTicket ? 'Novo Chamado' : 'Editar Chamado'}</CardTitle>
-          <CardDescription>
-            {isNewTicket
-              ? 'Preencha os campos para criar um novo chamado'
-              : `Editando chamado com protocolo ${ticket.protocol}`}
-          </CardDescription>
-        </CardHeader>
+    )
+  }
+
+  const typeInfo = typeMap[ticket.type] || { label: ticket.type, color: '#3b82f6' }
+  const statusInfo = statusMap[ticket.status] || { label: ticket.status, color: '#3b82f6', bgColor: '#e0f2fe' }
+  const createdAt = new Date(ticket.createdAt)
+  const formattedDate = createdAt.toLocaleDateString('pt-BR')
+  const timeAgo = formatDistanceToNow(createdAt, { addSuffix: true, locale: ptBR })
+
+  return (
+    <div className="container py-10 max-w-5xl">
+      <div className="flex items-center mb-6">
+        <Button variant="ghost" onClick={() => router.push('/admin/chamados')} className="mr-4">
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
         
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="protocol">Protocolo</Label>
-              <Input
-                id="protocol"
-                value={ticket.protocol}
-                onChange={(e) => handleChange('protocol', e.target.value)}
-                disabled={!isNewTicket}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="type">Tipo</Label>
-              <Select
-                value={ticket.type}
-                onValueChange={(value) => handleChange('type', value as TicketType)}
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Detalhes do Chamado</h1>
+          <p className="text-neutral-600 mt-1">
+            Visualize e responda ao chamado
+          </p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2">
+          <Card className="overflow-hidden">
+            <div className="h-2" style={{ backgroundColor: typeInfo.color }}></div>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center">
+                  Protocolo: <span className="text-primary ml-2">{ticket.protocol}</span>
+                </CardTitle>
+                <CardDescription className="mt-2 flex items-center">
+                  <Clock className="h-4 w-4 mr-1" />
+                  <span className="mr-3">{timeAgo}</span>
+                  <Calendar className="h-4 w-4 mr-1" />
+                  <span>{formattedDate}</span>
+                </CardDescription>
+              </div>
+              
+              <div 
+                className="px-3 py-1 rounded-md text-sm font-medium"
+                style={{ 
+                  backgroundColor: statusInfo.bgColor,
+                  color: statusInfo.color
+                }}
               >
-                <SelectTrigger id="type">
-                  <SelectValue placeholder="Selecione um tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem key="reclamacao" value={TicketType.RECLAMACAO}>Reclamação</SelectItem>
-                  <SelectItem key="denuncia" value={TicketType.DENUNCIA}>Denúncia</SelectItem>
-                  <SelectItem key="sugestao" value={TicketType.SUGESTAO}>Sugestão</SelectItem>
-                  <SelectItem key="duvida" value={TicketType.DUVIDA}>Dúvida</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="category">Categoria</Label>
-              <Input
-                id="category"
-                value={ticket.category || ''}
-                onChange={(e) => handleChange('category', e.target.value)}
-                placeholder="Ex: atendimento, ensino, etc."
-              />
-            </div>
+                {statusInfo.label}
+              </div>
+            </CardHeader>
             
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={ticket.status}
-                onValueChange={(value) => handleChange('status', value as TicketStatus)}
-              >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Selecione um status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem key="aberto" value={TicketStatus.ABERTO}>Aberto</SelectItem>
-                  <SelectItem key="em_analise" value={TicketStatus.EM_ANALISE}>Em Análise</SelectItem>
-                  <SelectItem key="respondido" value={TicketStatus.RESPONDIDO}>Respondido</SelectItem>
-                  <SelectItem key="encaminhado" value={TicketStatus.ENCAMINHADO}>Encaminhado</SelectItem>
-                  <SelectItem key="resolvido" value={TicketStatus.RESOLVIDO}>Resolvido</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome</Label>
-              <Input
-                id="name"
-                value={ticket.name || ''}
-                onChange={(e) => handleChange('name', e.target.value)}
-                placeholder="Nome do solicitante"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={ticket.email || ''}
-                onChange={(e) => handleChange('email', e.target.value)}
-                placeholder="E-mail do solicitante"
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="message">Mensagem</Label>
-            <Textarea
-              id="message"
-              value={ticket.message || ''}
-              onChange={(e) => handleChange('message', e.target.value)}
-              placeholder="Conteúdo da mensagem"
-              rows={5}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="response">Resposta</Label>
-            <Textarea
-              id="response"
-              value={ticket.response || ''}
-              onChange={(e) => handleChange('response', e.target.value)}
-              placeholder="Resposta ao chamado"
-              rows={5}
-            />
-            {ticket.status !== TicketStatus.ENCAMINHADO && !ticket.response && (
-              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start">
-                <div className="text-blue-600 mr-2 mt-0.5">
-                  <Info className="h-4 w-4" />
+            <CardContent className="space-y-6">
+              <div className="flex flex-col space-y-1">
+                <div className="flex items-center mb-2">
+                  <div 
+                    className="px-3 py-1 rounded-md text-sm font-medium w-fit"
+                    style={{ 
+                      backgroundColor: `${typeInfo.color}20`,
+                      color: typeInfo.color
+                    }}
+                  >
+                    {typeInfo.label}
+                  </div>
                 </div>
-                <div className="text-sm text-blue-700">
-                  Ao adicionar uma resposta, o status será alterado automaticamente para "Respondido".
+                
+                {ticket.category && (
+                  <div className="flex items-center text-sm text-neutral-600">
+                    <span className="font-medium mr-2">Categoria:</span>
+                    <span>{ticket.category}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-start">
+                  <User className="h-4 w-4 mr-2 mt-1 text-neutral-500" />
+                  <div>
+                    <p className="text-sm text-neutral-600 font-medium">Nome</p>
+                    <p>{ticket.name || 'Não informado'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <Mail className="h-4 w-4 mr-2 mt-1 text-neutral-500" />
+                  <div>
+                    <p className="text-sm text-neutral-600 font-medium">Email</p>
+                    <p>{ticket.email || 'Não informado'}</p>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
-
-          {!isNewTicket && ticket.status !== TicketStatus.RESOLVIDO && ticket.response && (
-            <div className="flex justify-center">
-              <Button 
-                variant="outline" 
-                className="bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                onClick={() => handleChange('status', TicketStatus.RESOLVIDO)}
-              >
-                <Info className="h-4 w-4 mr-2" />
-                Marcar como Resolvido
-              </Button>
-            </div>
-          )}
-        </CardContent>
-        
-        <CardFooter className="flex justify-between">
-          {!isNewTicket && (
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteDialog(true)}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
-            </Button>
-          )}
+              
+              <Separator />
+              
+              <div className="space-y-3">
+                <div className="flex items-start">
+                  <MessageSquare className="h-4 w-4 mr-2 mt-1 text-neutral-500" />
+                  <div className="flex-1">
+                    <p className="text-sm text-neutral-600 font-medium mb-2">Mensagem</p>
+                    <div className="bg-neutral-50 rounded-md p-4 text-neutral-700">
+                      {formatMessageContent(ticket.message || '')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {ticket.response && (
+                <div className="space-y-3 mt-6">
+                  <Separator />
+                  <div className="flex items-start">
+                    <FileText className="h-4 w-4 mr-2 mt-1 text-green-600" />
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <p className="text-sm text-green-700 font-medium">Resposta</p>
+                        {ticket.responseDate && (
+                          <p className="text-xs text-neutral-500 ml-2">
+                            ({new Date(ticket.responseDate).toLocaleDateString('pt-BR')} às {new Date(ticket.responseDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})
+                          </p>
+                        )}
+                      </div>
+                      <div className="bg-green-50 border-l-2 border-green-500 rounded-md p-4 text-neutral-700">
+                        <div className="whitespace-pre-wrap">{ticket.response}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
           
-          <div className="flex space-x-2">
-            <Button variant="outline" onClick={handleCancel}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar
-                </>
+          {/* Seção de Resposta */}
+          {!ticket.response && ticket.status !== 'resolvido' && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="text-lg">Responder ao Chamado</CardTitle>
+                <CardDescription>
+                  Responda ao chamado do usuário. A resposta será enviada por email.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  placeholder="Digite sua resposta..."
+                  className="min-h-[150px]"
+                  value={response}
+                  onChange={(e) => setResponse(e.target.value)}
+                />
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="default" disabled={!response || responseLoading}>
+                      {responseLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Enviar Resposta
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirmar envio de resposta</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        A resposta será enviada ao usuário por email e o status do chamado será alterado para &quot;Respondido&quot;.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleResponseSubmit}>Confirmar</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </CardFooter>
+            </Card>
+          )}
+        </div>
+        
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Gerenciar Chamado</CardTitle>
+              <CardDescription>
+                Atualize o status e gerencie o chamado
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Status atual</label>
+                <Select
+                  value={currentStatus}
+                  onValueChange={setCurrentStatus}
+                  disabled={statusLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {currentStatus !== ticket.status && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Comentário interno</label>
+                  <Textarea
+                    placeholder="Comentário interno sobre a mudança de status (opcional)"
+                    className="min-h-[100px]"
+                    value={internalComments}
+                    onChange={(e) => setInternalComments(e.target.value)}
+                  />
+                </div>
               )}
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
-      
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Excluir chamado</DialogTitle>
-            <DialogDescription>
-              Tem certeza que deseja excluir o chamado com protocolo <span className="font-mono font-semibold">{ticket.protocol}</span>?
-              Esta ação não pode ser desfeita.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
-              disabled={isDeleting}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Excluindo...
-                </>
+            </CardContent>
+            <CardFooter>
+              <Button 
+                onClick={() => handleStatusChange(currentStatus)}
+                disabled={statusLoading || currentStatus === ticket.status}
+                className="w-full"
+              >
+                {statusLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Atualizar Status
+              </Button>
+            </CardFooter>
+          </Card>
+          
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Histórico de Status</CardTitle>
+              <CardDescription>
+                Mudanças de status do chamado
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {ticket.statusHistory && ticket.statusHistory.length > 0 ? (
+                <div className="space-y-3">
+                  {ticket.statusHistory.map((history, index) => {
+                    const fromStatus = statusMap[history.from] || { label: history.from, color: '#3b82f6' }
+                    const toStatus = statusMap[history.to] || { label: history.to, color: '#3b82f6' }
+                    
+                    return (
+                      <div key={index} className="border-l-2 border-neutral-200 pl-3 py-1">
+                        <p className="text-sm text-neutral-600">
+                          <span className="font-medium">
+                            {new Date(history.date).toLocaleDateString('pt-BR')} {' '}
+                            {new Date(history.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </p>
+                        <p className="text-sm mt-1">
+                          Alterado de <span style={{ color: fromStatus.color }}>{fromStatus.label}</span> para <span style={{ color: toStatus.color }}>{toStatus.label}</span>
+                        </p>
+                        {history.comments && (
+                          <p className="text-xs text-neutral-500 mt-1">{history.comments}</p>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               ) : (
-                'Excluir'
+                <p className="text-neutral-500 text-sm">Nenhuma mudança de status registrada</p>
               )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
       
       <Toaster position="top-right" richColors />
     </div>

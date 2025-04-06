@@ -29,6 +29,14 @@ export async function verifyAdminRole(): Promise<boolean> {
   }
 }
 
+/**
+ * Alias para verifyAdminRole para compatibilidade com código existente
+ * @returns {Promise<boolean>} true se o usuário é administrador, false caso contrário
+ */
+export async function verifyAdminAuth(): Promise<boolean> {
+  return verifyAdminRole()
+}
+
 // Verifica se o usuário atual está autenticado
 export async function isUserAuthenticated(): Promise<boolean> {
   try {

@@ -2,6 +2,7 @@ import dbConnect from '@/lib/mongodb'
 import { TicketFormData, TicketStatus, TicketType } from '@/app/types/ticket'
 import { calculateDeadlineDate, generateProtocol, generateUUID } from '@/lib/utils'
 import Ticket from '@/lib/models/ticket'
+import { sendTicketNotification, sendStatusUpdateNotification } from '@/lib/email-service'
 
 // Importação com tratamento de erro
 let TicketModel: any = null
@@ -48,12 +49,32 @@ export async function createTicket(data: TicketFormData) {
       ? '48 horas' 
       : '15 dias'
     
-    return {
+    const result = {
       success: true,
       protocol,
       deadlineText,
-      deadlineFormatted: deadlineDate.toLocaleDateString('pt-BR')
+      deadlineFormatted: deadlineDate.toLocaleDateString('pt-BR'),
+      ticket: {
+        ...ticket.toObject(),
+        createdAt: now,
+      }
     }
+    
+    // Enviar notificações por email de forma assíncrona
+    if (data.email) {
+      sendTicketNotification({
+        protocol,
+        type: data.type,
+        category: data.category,
+        name: data.name,
+        email: data.email,
+        createdAt: now
+      }).catch(err => 
+        console.error('Falha ao enviar notificação por email:', err)
+      )
+    }
+    
+    return result
   } catch (error) {
     console.error('Erro ao criar ticket:', error)
     
@@ -243,16 +264,107 @@ export async function updateTicketStatus(id: string, status: TicketStatus, inter
       return { success: false, error: 'Chamado não encontrado' }
     }
     
+    // Se o status não mudou, não precisamos fazer nada
+    if (ticket.status === status) {
+      return { 
+        success: true, 
+        message: 'Status já estava atualizado',
+        ticket
+      }
+    }
+    
+    // Registra o status anterior para histórico
+    const previousStatus = ticket.status
+    
+    // Atualiza o status do ticket
     ticket.status = status
     if (internalComments) {
       ticket.internalComments = internalComments
     }
     
+    // Adiciona ao histórico de atualizações
+    if (!ticket.statusHistory) {
+      ticket.statusHistory = []
+    }
+    
+    ticket.statusHistory.push({
+      from: previousStatus,
+      to: status,
+      date: new Date(),
+      comments: internalComments || ''
+    })
+    
     await ticket.save()
     
-    return { success: true, ticket }
+    // Enviar notificação por email sobre a mudança de status
+    if (ticket.email) {
+      sendStatusUpdateNotification({
+        protocol: ticket.protocol,
+        type: ticket.type,
+        name: ticket.name,
+        email: ticket.email,
+        createdAt: ticket.createdAt,
+        status: status
+      }).catch(err => {
+        console.error('Erro ao enviar notificação de atualização de status:', err)
+      })
+    }
+    
+    return {
+      success: true,
+      message: 'Status do chamado atualizado com sucesso',
+      ticket
+    }
   } catch (error) {
     console.error('Erro ao atualizar status do ticket:', error)
     return { success: false, error: 'Falha ao atualizar o status do chamado' }
+  }
+}
+
+/**
+ * Responde a um chamado
+ */
+export async function respondToTicket(id: string, response: string) {
+  try {
+    await dbConnect()
+    
+    if (!TicketModel) {
+      console.warn('Modelo Ticket não disponível, retornando erro')
+      return { success: false, error: 'Chamado não encontrado' }
+    }
+    
+    const ticket = await TicketModel.findById(id)
+    if (!ticket) {
+      return { success: false, error: 'Chamado não encontrado' }
+    }
+    
+    ticket.response = response
+    ticket.responseDate = new Date()
+    ticket.status = TicketStatus.RESPONDIDO
+    
+    await ticket.save()
+    
+    // Enviar notificação por email sobre a resposta
+    if (ticket.email) {
+      sendStatusUpdateNotification({
+        protocol: ticket.protocol,
+        type: ticket.type,
+        name: ticket.name,
+        email: ticket.email,
+        createdAt: ticket.createdAt,
+        status: TicketStatus.RESPONDIDO
+      }).catch(err => {
+        console.error('Erro ao enviar notificação de resposta:', err)
+      })
+    }
+    
+    return {
+      success: true,
+      message: 'Resposta adicionada com sucesso',
+      ticket
+    }
+  } catch (error) {
+    console.error('Erro ao responder ao ticket:', error)
+    return { success: false, error: 'Falha ao adicionar resposta ao chamado' }
   }
 } 

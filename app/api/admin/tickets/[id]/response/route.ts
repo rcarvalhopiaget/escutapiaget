@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdminAuth } from '@/lib/auth-utils'
-import { updateTicketStatus } from '@/lib/services/ticket-service'
-import { TicketStatus } from '@/app/types/ticket'
+import { verifyAdminRole } from '@/lib/auth-utils'
+import { respondToTicket } from '@/lib/services/ticket-service'
 
-export async function PATCH(
+export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     // Verificar se o usuário é administrador
-    const isAuthorized = await verifyAdminAuth()
+    const isAuthorized = await verifyAdminRole()
     
     if (!isAuthorized) {
       return NextResponse.json(
@@ -20,29 +19,29 @@ export async function PATCH(
     
     // Extrair ID do ticket e dados da requisição
     const id = params.id
-    const { status, internalComments } = await request.json()
+    const { response } = await request.json()
     
-    // Validar o status recebido
-    if (!status || !Object.values(TicketStatus).includes(status as TicketStatus)) {
+    // Validar a resposta recebida
+    if (!response || response.trim() === '') {
       return NextResponse.json(
-        { error: 'Status inválido' },
+        { error: 'É necessário fornecer uma resposta para o chamado' },
         { status: 400 }
       )
     }
     
-    // Atualizar o status no banco de dados
-    const result = await updateTicketStatus(id, status as TicketStatus, internalComments)
+    // Adicionar resposta ao ticket no banco de dados
+    const result = await respondToTicket(id, response)
     
     if (!result.success) {
       return NextResponse.json(
-        { error: result.error || 'Erro ao atualizar status' },
+        { error: result.error || 'Erro ao responder ao chamado' },
         { status: 400 }
       )
     }
     
     return NextResponse.json(result)
   } catch (error) {
-    console.error('Erro ao atualizar status do ticket:', error)
+    console.error('Erro ao responder ao ticket:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

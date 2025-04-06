@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -27,7 +27,8 @@ const typeText: Record<TicketType, string> = {
   [TicketType.DUVIDA]: 'Dúvida'
 }
 
-export default function ProtocoloPage() {
+// Componente interno que usa useSearchParams
+function ProtocoloPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   
@@ -293,5 +294,21 @@ export default function ProtocoloPage() {
       
       <Toaster position="top-right" richColors />
     </div>
+  )
+}
+
+// Componente principal que envolve o conteúdo em um Suspense
+export default function ProtocoloPage() {
+  return (
+    <Suspense fallback={
+      <div className="container max-w-4xl mx-auto py-10 px-4 sm:px-6">
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-500 mb-4" />
+          <p className="text-lg">Carregando página...</p>
+        </div>
+      </div>
+    }>
+      <ProtocoloPageContent />
+    </Suspense>
   )
 } 

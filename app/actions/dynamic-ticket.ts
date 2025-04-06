@@ -82,7 +82,6 @@ export async function createTicketWithAnswers(data: InputType) {
         // Aqui você processaria/salvaria os arquivos
         // Por enquanto, apenas registramos os metadados
         const fileData = answer.map((file: any) => ({
-          questionId,
           fileName: file.name,
           fileSize: file.size,
           fileType: file.type

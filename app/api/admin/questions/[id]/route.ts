@@ -51,9 +51,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     return NextResponse.json(updatedQuestion)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro ao atualizar pergunta:', error)
-    if (error.name === 'ValidationError') {
+    if (error instanceof Error && error.name === 'ValidationError') {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
     return NextResponse.json({ error: 'Erro interno ao atualizar pergunta' }, { status: 500 })
@@ -84,7 +84,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
     // Retorna uma resposta vazia com status 204 (No Content)
     return new NextResponse(null, { status: 204 })
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Erro ao excluir pergunta:', error)
     return NextResponse.json({ error: 'Erro interno ao excluir pergunta' }, { status: 500 })
   }

@@ -216,7 +216,7 @@ function FormularioContent() {
           <h3 className="text-lg font-semibold mt-6 mb-2 text-blue-700">Como Processamos seu Pedido</h3>
           <p className="mb-4 text-sm">Após o recebimento da sua solicitação, nossa equipe de proteção de dados irá analisá-la e responder em até 10 dias. Para solicitações mais complexas, este prazo pode ser estendido, mas você será informado.</p>
           
-          <p className="text-sm">Para dúvidas específicas sobre proteção de dados, entre em contato com nosso Encarregado de Dados (DPO) através do e-mail: <a href="mailto:dpo@escolapiaget.com.br" className="text-blue-600 hover:underline font-medium">dpo@escolapiaget.com.br</a></p>
+          <p className="text-sm">Para dúvidas específicas sobre proteção de dados, entre em contato com nosso Encarregado de Dados (DPO) através do e-mail: <a href="mailto:colegiopiagetsbc@jpiaget.com.br" className="text-blue-600 hover:underline font-medium">colegiopiagetsbc@jpiaget.com.br</a></p>
         </div>
       )}
 

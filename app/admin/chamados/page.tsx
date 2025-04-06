@@ -255,7 +255,7 @@ export default function ChamadosPage() {
             ) : (
               <DataTable
                 columns={ticketColumns}
-                data={tickets}
+                data={tickets.filter(t => t.status === 'aberto')}
                 searchColumn="protocol"
                 searchPlaceholder="Buscar por protocolo..."
               />
@@ -273,7 +273,7 @@ export default function ChamadosPage() {
             ) : (
               <DataTable
                 columns={ticketColumns}
-                data={tickets}
+                data={tickets.filter(t => t.status === 'em_analise')}
                 searchColumn="protocol"
                 searchPlaceholder="Buscar por protocolo..."
               />
@@ -291,7 +291,7 @@ export default function ChamadosPage() {
             ) : (
               <DataTable
                 columns={ticketColumns}
-                data={tickets}
+                data={tickets.filter(t => t.status === 'respondido')}
                 searchColumn="protocol"
                 searchPlaceholder="Buscar por protocolo..."
               />
@@ -309,7 +309,7 @@ export default function ChamadosPage() {
             ) : (
               <DataTable
                 columns={ticketColumns}
-                data={tickets}
+                data={tickets.filter(t => t.status === 'encaminhado')}
                 searchColumn="protocol"
                 searchPlaceholder="Buscar por protocolo..."
               />
@@ -327,7 +327,7 @@ export default function ChamadosPage() {
             ) : (
               <DataTable
                 columns={ticketColumns}
-                data={tickets}
+                data={tickets.filter(t => t.status === 'resolvido')}
                 searchColumn="protocol"
                 searchPlaceholder="Buscar por protocolo..."
               />

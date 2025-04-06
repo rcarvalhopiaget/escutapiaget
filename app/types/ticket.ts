@@ -28,27 +28,40 @@ export enum TicketStatus {
   RESOLVIDO = 'resolvido'
 }
 
+export interface StatusHistoryItem {
+  from: string;
+  to: string;
+  date: Date | string;
+  comments?: string;
+}
+
 export interface Ticket {
-  id: string
-  protocol: string
-  type: TicketType
-  category: string
-  status: TicketStatus
-  name?: string
-  email?: string
-  message: string
-  response?: string
-  createdAt: string
-  updatedAt: string
+  id: string;
+  protocol: string;
+  type: TicketType | string;
+  category?: string;
+  status: TicketStatus | string;
+  name?: string;
+  email?: string;
+  message?: string;
+  response?: string;
+  responseDate?: Date | string;
+  createdAt: string | Date;
+  updatedAt?: string | Date;
+  studentName?: string;
+  studentGrade?: string;
+  isStudent?: boolean;
+  internalComments?: string;
+  statusHistory?: StatusHistoryItem[];
 }
 
 export interface TicketFormData {
-  type: TicketType
-  category: TicketCategory
-  name: string
-  email: string
-  studentName: string
-  studentGrade: string
-  isStudent: boolean
-  message: string
+  type: TicketType;
+  category?: string;
+  name?: string;
+  email?: string;
+  studentName?: string;
+  studentGrade?: string;
+  isStudent?: boolean;
+  message: string;
 } 

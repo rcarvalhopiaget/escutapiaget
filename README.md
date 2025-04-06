@@ -118,5 +118,5 @@ Este projeto é propriedade da Escola Piaget. Todos os direitos reservados.
 ## 👥 Contato
 
 Para mais informações ou suporte, entre em contato com:
-- Email: suporte@escolapiaget.com.br
-- Telefone: (XX) XXXX-XXXX
+- Email: contato@2clicks.tech
+- Telefone: (11) 99124-9874
