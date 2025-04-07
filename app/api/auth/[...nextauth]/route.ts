@@ -180,8 +180,10 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/admin/login',
     error: '/admin/login',
+    signOut: '/',
   },
-  secret: process.env.NEXTAUTH_SECRET || 'um-segredo-temporario-para-desenvolvimento-local'
+  secret: process.env.NEXTAUTH_SECRET || 'um-segredo-temporario-para-desenvolvimento-local',
+  debug: process.env.NODE_ENV === 'development',
 }
 
 const handler = NextAuth(authOptions)

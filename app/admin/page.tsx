@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
+import { LogoutButton } from '@/components/logout-button'
 
 export default function AdminPage() {
   return (
@@ -31,11 +32,7 @@ export default function AdminPage() {
                 Usuários
               </Link>
             </Button>
-            <Button variant="ghost" className="justify-start" asChild>
-              <Link href="/api/auth/signout">
-                Sair
-              </Link>
-            </Button>
+            <LogoutButton />
           </div>
         </div>
 
