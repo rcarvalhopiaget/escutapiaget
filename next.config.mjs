@@ -21,6 +21,15 @@ const nextConfig = {
         http2: false,
         os: false,
         path: false,
+        crypto: require.resolve('crypto-browserify'),
+        stream: require.resolve('stream-browserify'),
+        util: require.resolve('util/'),
+        zlib: require.resolve('browserify-zlib'),
+        querystring: require.resolve('querystring-es3'),
+        url: require.resolve('url/'),
+        https: require.resolve('https-browserify'),
+        http: require.resolve('stream-http'),
+        assert: require.resolve('assert/'),
       };
     }
     return config;
