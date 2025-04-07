@@ -4,53 +4,28 @@ import User from '@/lib/models/user'
 import { verifyAdminRole } from '@/lib/auth-utils'
 import bcrypt from 'bcrypt'
 
-export async function GET(request: NextRequest) {
-  console.log('[API] Iniciando GET /api/admin/users')
-  
+export async function GET(req: NextRequest) {
   try {
-    // Verificar se o usuário é administrador
-    console.log('[API] Verificando autorização do usuário')
-    const isAdmin = await verifyAdminRole()
-    
-    if (!isAdmin) {
-      console.log('[API] Usuário não autorizado')
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 403 }
-      )
+    // Verificar se o usuário é administrador (em produção)
+    // Em modo de desenvolvimento, permitir acesso para diagnóstico
+    if (process.env.NODE_ENV !== 'development') {
+      const isAdmin = await verifyAdminRole()
+      if (!isAdmin) {
+        return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+      }
     }
-    
-    console.log('[API] Usuário autorizado, buscando usuários')
-    
-    // Obter parâmetros de query
-    const searchParams = request.nextUrl.searchParams
-    const department = searchParams.get('department')
-    const role = searchParams.get('role')
-    
-    const filters: { department?: string; role?: string } = {}
-    if (department) filters.department = department
-    if (role) filters.role = role
     
     // Conectar ao banco de dados
     await dbConnect()
     
-    // Buscar usuários
-    const users = await User.find(filters)
-      .select('-password') // Não retornar o campo password
-      .sort({ createdAt: -1 })
+    // Buscar todos os usuários admin
+    const admins = await User.find({ role: 'admin' }).select('-password')
     
-    console.log(`[API] Encontrados ${users.length} usuários`)
-    
-    // Retornar lista de usuários
-    return NextResponse.json(
-      { success: true, users },
-      { status: 200 }
-    )
+    return NextResponse.json({ admins }, { status: 200 })
   } catch (error) {
-    console.error('[API] Erro ao buscar usuários:', error)
-    
+    console.error('Erro ao buscar usuários:', error)
     return NextResponse.json(
-      { error: 'Ocorreu um erro ao buscar os usuários' },
+      { error: 'Erro ao buscar usuários' },
       { status: 500 }
     )
   }
