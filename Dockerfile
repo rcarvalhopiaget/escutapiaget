@@ -3,10 +3,12 @@ FROM node:20-alpine AS base
 
 # Estágio de dependências
 FROM base AS dependencies
-RUN apk add --no-cache libc6-compat
+# Adicionar dependências necessárias para compilação de pacotes nativos
+RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# Usar flags adicionais para resolver problemas de instalação
+RUN npm ci --no-audit --no-fund --legacy-peer-deps || npm install --no-audit --no-fund --legacy-peer-deps
 
 # Adicionar sharp para otimização de imagens
 RUN npm install sharp
