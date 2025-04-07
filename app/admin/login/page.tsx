@@ -28,14 +28,18 @@ function LoginForm() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') || '/admin'
+  const callbackUrl = searchParams.get('from') || searchParams.get('callbackUrl') || '/admin/dashboard'
   const [isLoading, setIsLoading] = useState(false)
 
   // Redirecionar automaticamente se já estiver autenticado
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role === 'admin') {
-      console.log('Usuário já autenticado como admin, redirecionando para:', callbackUrl)
-      router.push(callbackUrl)
+    if (status === 'authenticated') {
+      console.log('Usuário autenticado:', session?.user)
+      console.log('Redirecionando para:', callbackUrl)
+      
+      // Usar window.location.href para garantir um reload completo da página
+      // em vez de router.push que pode ser interceptado pelo middleware
+      window.location.href = callbackUrl
     }
   }, [status, session, router, callbackUrl])
 
@@ -76,11 +80,10 @@ function LoginForm() {
       // Aguardar um momento antes de redirecionar para garantir que os cookies sejam atualizados
       setTimeout(() => {
         console.log('Redirecionando para:', callbackUrl)
-        router.push(callbackUrl)
         // Forçar um recarregamento completo da página para garantir que o token seja aplicado 
         // e o middleware funcione corretamente
         window.location.href = callbackUrl
-      }, 1000)
+      }, 1500)
       
     } catch (error) {
       console.error('Erro inesperado:', error)
@@ -145,6 +148,11 @@ function LoginForm() {
         <div className="mt-6 text-center">
           <p className="text-sm text-neutral-500">
             Esqueceu a senha? Entre em contato com o administrador do sistema.
+          </p>
+          <p className="text-sm text-neutral-500 mt-2">
+            <Button variant="link" className="p-0 h-auto" onClick={() => router.push('/admin/google-auth')}>
+              Entrar com Google
+            </Button>
           </p>
           <p className="text-sm text-neutral-500 mt-2">
             <Button variant="link" className="p-0 h-auto" onClick={() => router.push('/admin/setup')}>
