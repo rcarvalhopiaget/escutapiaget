@@ -50,6 +50,14 @@ const ticketSchema = new Schema({
     required: false,
     trim: true,
   },
+  attachments: [
+    {
+      driveId: { type: String, required: true },
+      name: { type: String, required: true },
+      webViewLink: { type: String, required: false }, // Link para visualizar no Google Drive
+      uploadedAt: { type: Date, default: Date.now },
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now,

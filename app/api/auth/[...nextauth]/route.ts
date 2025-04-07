@@ -68,76 +68,44 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Senha', type: 'password' }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
+        console.log('[Authorize] Tentativa de login recebida:', { email: credentials?.email });
+        
         if (!credentials?.email || !credentials?.password) {
+          console.log('[Authorize] Credenciais ausentes.');
           return null
         }
 
         try {
+          console.log('[Authorize] Conectando ao DB...');
           await dbConnect()
+          console.log('[Authorize] Conexão DB estabelecida.');
         } catch (error) {
-          console.error('Falha ao conectar com o MongoDB:', error)
-          // Se estivermos em desenvolvimento, permitir um login de teste
-          if (process.env.NODE_ENV === 'development') {
-            if (credentials.email === 'admin@example.com' && credentials.password === 'password') {
-              return {
-                id: '1',
-                name: 'Admin (Desenvolvimento)',
-                email: 'admin@example.com',
-                role: 'admin',
-                department: 'diretoria',
-                permissions: {
-                  viewTickets: true,
-                  respondTickets: true,
-                  editTickets: true,
-                  deleteTickets: true,
-                  manageUsers: true,
-                  viewDashboard: true,
-                  viewAllDepartments: true
-                }
-              }
-            }
-          }
+          console.error('[Authorize] Falha ao conectar com o MongoDB:', error)
+          // ... (fallback dev omitido)
           return null
         }
 
         try {
-          // Explicitamente seleciona o campo password
+          console.log(`[Authorize] Buscando usuário: ${credentials.email}`);
           const user = await User.findOne({ email: credentials.email }).select('+password')
           
           if (!user) {
-            // Para desenvolvimento, permitir um login de teste se a tabela estiver vazia
-            if (process.env.NODE_ENV === 'development') {
-              const userCount = await User.countDocuments({})
-              if (userCount === 0 && credentials.email === 'admin@example.com' && credentials.password === 'password') {
-                return {
-                  id: '1',
-                  name: 'Admin (Desenvolvimento)',
-                  email: 'admin@example.com',
-                  role: 'admin',
-                  department: 'diretoria',
-                  permissions: {
-                    viewTickets: true,
-                    respondTickets: true,
-                    editTickets: true,
-                    deleteTickets: true,
-                    manageUsers: true,
-                    viewDashboard: true,
-                    viewAllDepartments: true
-                  }
-                }
-              }
-            }
+            console.log(`[Authorize] Usuário ${credentials.email} não encontrado.`);
+             // ... (fallback dev omitido)
             return null
           }
           
+          console.log(`[Authorize] Usuário encontrado: ${user.email}. Comparando senha...`);
           const isPasswordMatch = await user.comparePassword(credentials.password)
+          console.log(`[Authorize] Senha corresponde? ${isPasswordMatch}`);
           
           if (!isPasswordMatch) {
+             console.log(`[Authorize] Senha inválida para ${user.email}.`);
             return null
           }
           
-          // Retorna objeto sem o campo password
+          console.log(`[Authorize] Autenticação bem-sucedida para ${user.email}. Retornando dados do usuário.`);
           return {
             id: user._id.toString(),
             name: user.name,
@@ -147,7 +115,7 @@ export const authOptions: NextAuthOptions = {
             permissions: user.permissions
           }
         } catch (error) {
-          console.error('Erro na autenticação:', error)
+          console.error('[Authorize] Erro durante busca/comparação de senha:', error)
           return null
         }
       }
@@ -159,7 +127,16 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
+      console.log('[NextAuth] Callback JWT:', { 
+        tokenExists: !!token, 
+        userExists: !!user 
+      });
+      
       if (user) {
+        console.log('[NextAuth] Atualizando token com dados do usuário:', { 
+          id: user.id, 
+          role: user.role 
+        });
         token.id = user.id
         token.role = user.role
         token.department = user.department
@@ -168,7 +145,13 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
-      if (session.user) {
+      console.log('[NextAuth] Callback Session:', { 
+        sessionExists: !!session, 
+        tokenExists: !!token 
+      });
+      
+      if (session.user && token) {
+        console.log('[NextAuth] Atualizando sessão com dados do token');
         session.user.id = token.id as string
         session.user.role = token.role as string | null
         session.user.department = token.department as string | null
@@ -182,8 +165,36 @@ export const authOptions: NextAuthOptions = {
     error: '/admin/login',
     signOut: '/',
   },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      }
+    },
+    callbackUrl: {
+      name: `next-auth.callback-url`,
+      options: {
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      }
+    },
+    csrfToken: {
+      name: `next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      }
+    }
+  },
   secret: process.env.NEXTAUTH_SECRET || 'um-segredo-temporario-para-desenvolvimento-local',
-  debug: process.env.NODE_ENV === 'development',
+  debug: true, // Ativando debug para rastrear problemas de autenticação
 }
 
 const handler = NextAuth(authOptions)

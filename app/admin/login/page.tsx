@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { signIn } from 'next-auth/react'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { signIn, useSession } from 'next-auth/react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -25,7 +25,18 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get('callbackUrl') || '/admin'
   const [isLoading, setIsLoading] = useState(false)
+
+  // Redirecionar automaticamente se já estiver autenticado
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'admin') {
+      console.log('Usuário já autenticado como admin, redirecionando para:', callbackUrl)
+      router.push(callbackUrl)
+    }
+  }, [status, session, router, callbackUrl])
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -39,11 +50,15 @@ export default function LoginPage() {
     setIsLoading(true)
     
     try {
+      console.log('Tentando login com:', data.email)
+      
       const result = await signIn('credentials', {
         redirect: false,
         email: data.email,
         password: data.password
       })
+      
+      console.log('Resposta do login:', result)
       
       if (result?.error) {
         toast.error('Erro ao fazer login', {
@@ -52,8 +67,19 @@ export default function LoginPage() {
         return
       }
       
-      // Login bem-sucedido, redirecionar para o painel
-      router.push('/admin')
+      // Login bem-sucedido
+      toast.success('Login bem-sucedido!', {
+        description: 'Redirecionando para o painel administrativo...'
+      })
+      
+      // Aguardar um momento antes de redirecionar para garantir que os cookies sejam atualizados
+      setTimeout(() => {
+        console.log('Redirecionando para:', callbackUrl)
+        router.push(callbackUrl)
+        // Forçar um recarregamento completo da página para garantir que o token seja aplicado 
+        // e o middleware funcione corretamente
+        window.location.href = callbackUrl
+      }, 1000)
       
     } catch (error) {
       console.error('Erro inesperado:', error)
