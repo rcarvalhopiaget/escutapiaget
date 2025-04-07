@@ -100,7 +100,7 @@ export default function AdminPage() {
           </Tabs>
 
           <footer className="mt-20 text-center text-gray-500 text-sm">
-            © {new Date().getFullYear()} Escola Piaget - Sistema de Ouvidoria
+            © {new Date().getFullYear()} 2Clicks - Sistema de Ouvidoria
           </footer>
         </div>
       </div>

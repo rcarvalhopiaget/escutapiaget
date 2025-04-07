@@ -26,22 +26,18 @@ type LoginFormValues = z.infer<typeof loginSchema>
 // Componente que usa o useSearchParams
 function LoginForm() {
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { status } = useSession() // Não precisamos mais da session aqui
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('from') || searchParams.get('callbackUrl') || '/admin/dashboard'
   const [isLoading, setIsLoading] = useState(false)
 
-  // Redirecionar automaticamente se já estiver autenticado
-  useEffect(() => {
-    if (status === 'authenticated') {
-      console.log('Usuário autenticado:', session?.user)
-      console.log('Redirecionando para:', callbackUrl)
-      
-      // Usar window.location.href para garantir um reload completo da página
-      // em vez de router.push que pode ser interceptado pelo middleware
-      window.location.href = callbackUrl
-    }
-  }, [status, session, router, callbackUrl])
+  // REMOVER o useEffect que redirecionava automaticamente
+  // useEffect(() => {
+  //   if (status === 'authenticated') {
+  //     console.log('Usuário autenticado, redirecionando (via useEffect):', callbackUrl)
+  //     router.push(callbackUrl)
+  //   }
+  // }, [status, router, callbackUrl])
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -55,42 +51,37 @@ function LoginForm() {
     setIsLoading(true)
     
     try {
-      console.log('Tentando login com:', data.email)
+      console.log(`Tentando login para redirecionar para: ${callbackUrl}`)
       
+      // Modificar signIn para usar redirect: true (padrão) e passar callbackUrl
       const result = await signIn('credentials', {
-        redirect: false,
+        // redirect: true é o padrão, não precisamos especificar
         email: data.email,
-        password: data.password
+        password: data.password,
+        callbackUrl: callbackUrl 
       })
       
-      console.log('Resposta do login:', result)
-      
+      // Se signIn retornar um erro (não redirecionou)
       if (result?.error) {
+        console.log('Erro retornado pelo signIn:', result.error)
         toast.error('Erro ao fazer login', {
           description: 'Credenciais inválidas. Verifique seu e-mail e senha.'
         })
-        return
+      } else if (result?.ok && !result.error) {
+         // Se signIn retornar ok e sem erro, mas não redirecionou (raro com redirect padrão)
+         // Apenas mostramos uma mensagem, pois o redirect deveria ter ocorrido.
+         toast.success('Login iniciado...'); 
       }
-      
-      // Login bem-sucedido
-      toast.success('Login bem-sucedido!', {
-        description: 'Redirecionando para o painel administrativo...'
-      })
-      
-      // Aguardar um momento antes de redirecionar para garantir que os cookies sejam atualizados
-      setTimeout(() => {
-        console.log('Redirecionando para:', callbackUrl)
-        // Forçar um recarregamento completo da página para garantir que o token seja aplicado 
-        // e o middleware funcione corretamente
-        window.location.href = callbackUrl
-      }, 1500)
+      // Se o redirect ocorreu, esta parte do código não será executada
       
     } catch (error) {
-      console.error('Erro inesperado:', error)
+      console.error('Erro inesperado no onSubmit:', error)
       toast.error('Erro ao fazer login', {
         description: 'Ocorreu um erro inesperado. Tente novamente mais tarde.'
       })
     } finally {
+      // Manter o isLoading como false pode ser problemático se o redirect ocorrer,
+      // pois o componente pode desmontar. Mas é bom ter para o caso de erro.
       setIsLoading(false)
     }
   }
@@ -149,11 +140,14 @@ function LoginForm() {
           <p className="text-sm text-neutral-500">
             Esqueceu a senha? Entre em contato com o administrador do sistema.
           </p>
+          {/* Remover o botão de login com Google */}
+          {/* 
           <p className="text-sm text-neutral-500 mt-2">
             <Button variant="link" className="p-0 h-auto" onClick={() => router.push('/admin/google-auth')}>
               Entrar com Google
             </Button>
-          </p>
+          </p> 
+          */}
           <p className="text-sm text-neutral-500 mt-2">
             <Button variant="link" className="p-0 h-auto" onClick={() => router.push('/admin/setup')}>
               Configuração inicial do sistema

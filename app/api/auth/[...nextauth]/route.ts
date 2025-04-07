@@ -74,10 +74,11 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Senha', type: 'password' }
       },
       async authorize(credentials, req) {
+        console.log('[Authorize] ------------------- INÍCIO DO PROCESSO DE AUTENTICAÇÃO -------------------');
         console.log('[Authorize] Tentativa de login recebida:', { email: credentials?.email });
         
         if (!credentials?.email || !credentials?.password) {
-          console.log('[Authorize] Credenciais ausentes.');
+          console.log('[Authorize] ERRO: Credenciais ausentes.');
           return null
         }
 
@@ -86,7 +87,7 @@ export const authOptions: NextAuthOptions = {
           await dbConnect()
           console.log('[Authorize] Conexão DB estabelecida.');
         } catch (error) {
-          console.error('[Authorize] Falha ao conectar com o MongoDB:', error)
+          console.error('[Authorize] ERRO: Falha ao conectar com o MongoDB:', error)
           // ... (fallback dev omitido)
           return null
         }
@@ -96,31 +97,42 @@ export const authOptions: NextAuthOptions = {
           const user = await User.findOne({ email: credentials.email }).select('+password')
           
           if (!user) {
-            console.log(`[Authorize] Usuário ${credentials.email} não encontrado.`);
-             // ... (fallback dev omitido)
+            console.log(`[Authorize] ERRO: Usuário ${credentials.email} não encontrado.`);
             return null
           }
           
-          console.log(`[Authorize] Usuário encontrado: ${user.email}. Comparando senha...`);
+          console.log(`[Authorize] Usuário encontrado:`, { 
+            id: user._id.toString(),
+            email: user.email,
+            role: user.role,
+            department: user.department
+          });
+          
+          console.log(`[Authorize] Comparando senha...`);
           const isPasswordMatch = await user.comparePassword(credentials.password)
           console.log(`[Authorize] Senha corresponde? ${isPasswordMatch}`);
           
           if (!isPasswordMatch) {
-             console.log(`[Authorize] Senha inválida para ${user.email}.`);
+            console.log(`[Authorize] ERRO: Senha inválida para ${user.email}.`);
             return null
           }
           
           console.log(`[Authorize] Autenticação bem-sucedida para ${user.email}. Retornando dados do usuário.`);
-          return {
+          const userData = {
             id: user._id.toString(),
             name: user.name,
             email: user.email,
             role: user.role,
             department: user.department,
             permissions: user.permissions
-          }
+          };
+          
+          console.log('[Authorize] Dados de usuário retornados:', userData);
+          console.log('[Authorize] ------------------- FIM DO PROCESSO DE AUTENTICAÇÃO -------------------');
+          
+          return userData;
         } catch (error) {
-          console.error('[Authorize] Erro durante busca/comparação de senha:', error)
+          console.error('[Authorize] ERRO durante busca/comparação de senha:', error)
           return null
         }
       }
@@ -132,6 +144,10 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async signIn({ user, account, profile }) {
+      console.log('[SignIn] ------------------- INÍCIO DO CALLBACK SIGNIN -------------------');
+      console.log('[SignIn] Provider:', account?.provider);
+      console.log('[SignIn] User:', user);
+      
       if (account?.provider === 'google') {
         console.log('[GoogleSignIn] Usuário autenticado via Google:', user.email);
         
@@ -168,6 +184,7 @@ export const authOptions: NextAuthOptions = {
             user.permissions = dbUser.permissions;
           }
           
+          console.log('[SignIn] ------------------- FIM DO CALLBACK SIGNIN -------------------');
           return true;
         } catch (error) {
           console.error('[GoogleSignIn] Erro ao processar usuário Google:', error);
@@ -175,39 +192,80 @@ export const authOptions: NextAuthOptions = {
         }
       }
       
+      console.log('[SignIn] ------------------- FIM DO CALLBACK SIGNIN -------------------');
       return true; // Mantém o fluxo normal para outros provedores
     },
     async jwt({ token, user }) {
-      console.log('[NextAuth] Callback JWT:', { 
-        tokenExists: !!token, 
-        userExists: !!user 
+      console.log('[JWT] ------------------- INÍCIO DO CALLBACK JWT -------------------');
+      console.log('[JWT] Token:', { 
+        sub: token.sub,
+        name: token.name,
+        email: token.email,
+        role: token.role,
+        id: token.id
       });
+      console.log('[JWT] User exists:', !!user);
       
       if (user) {
-        console.log('[NextAuth] Atualizando token com dados do usuário:', { 
+        console.log('[JWT] Atualizando token com dados do usuário:', { 
           id: user.id, 
-          role: user.role 
+          role: user.role,
+          department: user.department,
+          permissions: user.permissions
         });
         token.id = user.id
         token.role = user.role
         token.department = user.department
         token.permissions = user.permissions
       }
+      
+      console.log('[JWT] Token atualizado:', { 
+        sub: token.sub,
+        name: token.name,
+        email: token.email,
+        role: token.role,
+        id: token.id,
+        department: token.department
+      });
+      console.log('[JWT] ------------------- FIM DO CALLBACK JWT -------------------');
+      
       return token
     },
     async session({ session, token }) {
-      console.log('[NextAuth] Callback Session:', { 
-        sessionExists: !!session, 
-        tokenExists: !!token 
+      console.log('[Session] ------------------- INÍCIO DO CALLBACK SESSION -------------------');
+      console.log('[Session] Original session:', { 
+        user: {
+          name: session.user?.name,
+          email: session.user?.email
+        }
+      });
+      console.log('[Session] Token:', { 
+        sub: token.sub,
+        name: token.name,
+        email: token.email,
+        role: token.role,
+        id: token.id
       });
       
       if (session.user && token) {
-        console.log('[NextAuth] Atualizando sessão com dados do token');
+        console.log('[Session] Atualizando sessão com dados do token');
         session.user.id = token.id as string
         session.user.role = token.role as string | null
         session.user.department = token.department as string | null
         session.user.permissions = token.permissions
       }
+      
+      console.log('[Session] Sessão atualizada:', { 
+        user: {
+          id: session.user?.id,
+          name: session.user?.name,
+          email: session.user?.email,
+          role: session.user?.role,
+          department: session.user?.department
+        }
+      });
+      console.log('[Session] ------------------- FIM DO CALLBACK SESSION -------------------');
+      
       return session
     }
   },

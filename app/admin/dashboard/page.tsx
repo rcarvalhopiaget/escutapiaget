@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { toast } from 'sonner'
 import { 
   Loader2, 
   MessageSquare, 
@@ -33,27 +35,48 @@ import {
 } from 'recharts'
 
 import { Ticket, TicketStatus } from '@/app/types/ticket'
+import { AdminHeader } from '@/components/admin/admin-header'
 
 // Tipos de período para filtragem
 type PeriodOption = '7' | '30' | '90' | '180' | '365'
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(true)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [period, setPeriod] = useState<PeriodOption>('90')
   
-  // Efeito para redirecionar se não estiver autenticado
+  // Efeito para redirecionar se não estiver autenticado OU não tiver permissão
   useEffect(() => {
+    // Esperar o status ser determinado
+    if (status === 'loading') return;
+    
+    // Se não autenticado, redirecionar para login
     if (status === 'unauthenticated') {
+      console.log('[DashboardPage] Usuário não autenticado. Redirecionando para login.')
       router.push('/admin/login')
+      return;
     }
-  }, [status, router])
+    
+    // Se autenticado, verificar permissões
+    if (status === 'authenticated') {
+      const canViewDashboard = session?.user?.permissions?.viewDashboard || session?.user?.role === 'admin';
+      if (!canViewDashboard) {
+        console.log('[DashboardPage] Acesso negado. Usuário não tem permissão para ver o dashboard.')
+        toast.error('Acesso Negado', { description: 'Você não tem permissão para acessar esta página.' })
+        router.push('/admin/unauthorized') // Redirecionar para página de não autorizado
+      } else {
+        // Se tem permissão, buscar os tickets
+        console.log('[DashboardPage] Acesso permitido. Buscando dados...')
+        fetchTickets();
+      }
+    }
+  }, [status, session, router]) // Adicionar session às dependências
   
-  // Função para buscar os tickets
+  // Função para buscar os tickets (agora chamada pelo useEffect acima)
   const fetchTickets = async () => {
     try {
-      setIsLoading(true)
       const response = await fetch('/api/admin/tickets')
       const data = await response.json()
       
@@ -61,27 +84,22 @@ export default function DashboardPage() {
         setTickets(data.tickets || [])
       } else {
         console.error('Erro ao buscar tickets:', data.error)
+        toast.error('Erro ao carregar dados', { description: data.error || 'Falha ao buscar tickets.' })
       }
     } catch (error) {
       console.error('Erro ao buscar tickets:', error)
+      toast.error('Erro ao carregar dados', { description: 'Falha na comunicação com o servidor.' })
     } finally {
-      setIsLoading(false)
+      setIsLoading(false) // Definir isLoading como false após a tentativa
     }
   }
-  
-  // Buscar tickets ao carregar a página
-  useEffect(() => {
-    if (status === 'authenticated') {
-      fetchTickets()
-    }
-  }, [status])
   
   // Filtrar tickets pelo período selecionado
   const filteredTickets = tickets.filter(ticket => {
     const ticketDate = new Date(ticket.createdAt)
     const now = new Date()
     const periodDays = parseInt(period)
-    const periodDate = new Date(now.setDate(now.getDate() - periodDays))
+    const periodDate = new Date(new Date().setDate(now.getDate() - periodDays)) // Corrigido para não modificar 'now' diretamente
     
     return ticketDate >= periodDate
   })
@@ -123,7 +141,8 @@ export default function DashboardPage() {
   const descartadosNaoQualif = 0
   const descartadosTotalmente = 0
   
-  if (isLoading) {
+  // Mostrar loading enquanto a sessão carrega ou os dados são buscados
+  if (status === 'loading' || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
@@ -131,10 +150,26 @@ export default function DashboardPage() {
     )
   }
   
+  // Se chegou aqui e não está carregando, mas não está autenticado (após verificação do useEffect)
+  // Teoricamente não deveria acontecer devido ao redirect no useEffect, mas é uma salvaguarda.
+  if (status !== 'authenticated') {
+     return (
+      <div className="min-h-screen flex items-center justify-center text-red-500">
+         Acesso não autorizado ou sessão inválida.
+      </div>
+    )
+  }
+  
+  // Renderizar o dashboard apenas se autenticado e com permissão (verificado no useEffect)
   return (
     <div className="container py-10 max-w-7xl">
+      <AdminHeader 
+        title="Dashboard" 
+        description="Visualize dados e métricas do sistema de ouvidoria"
+      />
+      
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <div /> {/* Espaço vazio para manter o alinhamento */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Período:</span>
           <Select
@@ -249,63 +284,44 @@ export default function DashboardPage() {
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={typeChartData}
-                  margin={{
-                    top: 20,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
+                <BarChart data={typeChartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
-                  <YAxis />
+                  <YAxis allowDecimals={false} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#3b82f6">
-                    {typeChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Bar>
+                  <Bar dataKey="count" fill="#8884d8" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
         
-        {/* Gráfico de Distribuição de Status */}
+        {/* Gráfico de Distribuição por Status */}
         <Card>
           <CardHeader>
-            <CardTitle>Distribuição de Status dos Relatos</CardTitle>
+            <CardTitle>Distribuição por Status</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                {statusChartData.length > 0 ? (
-                  <PieChart>
-                    <Pie
-                      data={statusChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={true}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      nameKey="name"
-                      label={({name, percent}: {name: string, percent: number}) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {statusChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-neutral-500">Sem dados para exibir</p>
-                  </div>
-                )}
+                <PieChart>
+                  <Pie
+                    data={statusChartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                  >
+                    {statusChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  {/* <Legend /> */}
+                </PieChart>
               </ResponsiveContainer>
             </div>
           </CardContent>

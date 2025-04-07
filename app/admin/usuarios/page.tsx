@@ -9,8 +9,9 @@ import { Loader2, PlusCircle, Users } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Toaster } from '@/components/ui/sonner'
-import { DataTable } from '@/app/components/ui/data-table'
+import { DataTable } from '@/components/ui/data-table'
 import { toast } from 'sonner'
+import { AdminHeader } from '@/components/admin/admin-header'
 
 import { userColumns, UserData } from './columns'
 
@@ -94,19 +95,16 @@ export default function UsersPage() {
 
   return (
     <div className="container py-10 max-w-7xl">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Gerenciamento de Usuários</h2>
-          <p className="text-neutral-600 mt-1">
-            Gerencie os usuários do sistema e suas permissões
-          </p>
-        </div>
-        <div className="flex space-x-2">
-          <Button onClick={handleAddUser}>
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Novo Usuário
-          </Button>
-        </div>
+      <AdminHeader 
+        title="Gerenciamento de Usuários" 
+        description="Gerencie os usuários do sistema e suas permissões"
+      />
+      
+      <div className="flex justify-end space-x-2 mb-6">
+        <Button onClick={handleAddUser}>
+          <PlusCircle className="h-4 w-4 mr-2" />
+          Novo Usuário
+        </Button>
       </div>
 
       <Tabs defaultValue="all" onValueChange={handleTabChange}>

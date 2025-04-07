@@ -6,6 +6,7 @@ import { Question, QuestionType } from '@/app/types/question'; // Importar o tip
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { QuestionManager } from './question-manager';
+import { AdminHeader } from '@/components/admin/admin-header';
 
 // Função para buscar as perguntas (Server-side)
 // Usaremos fetch diretamente, pois é um Server Component
@@ -91,10 +92,10 @@ async function QuestionsList() {
 export default function AdminPerguntasPage() {
     return (
         <div className="container mx-auto py-8">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold">Gerenciar Perguntas</h1>
-                {/* Botão de adicionar removido daqui para evitar duplicação */}
-            </div>
+            <AdminHeader 
+                title="Gerenciar Perguntas" 
+                description="Administre as perguntas frequentes e categorias"
+            />
 
             <Suspense fallback={
                 <div className="flex items-center justify-center py-10">

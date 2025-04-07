@@ -1,6 +1,6 @@
-# Sistema de Chamados - Escola Piaget
+# Sistema de Chamados - 2Clicks
 
-Sistema completo de chamados para a Escola Piaget, destinado a pais de alunos e funcionários para registro de reclamações, denúncias, sugestões e dúvidas.
+Sistema completo de chamados para a 2Clicks, destinado a pais de alunos e funcionários para registro de reclamações, denúncias, sugestões e dúvidas.
 
 ## 🎯 Funcionalidades
 
@@ -113,7 +113,7 @@ Sistema completo de chamados para a Escola Piaget, destinado a pais de alunos e 
 
 ## 📝 Licença
 
-Este projeto é propriedade da Escola Piaget. Todos os direitos reservados.
+Este projeto é propriedade da 2Clicks. Todos os direitos reservados.
 
 ## 👥 Contato
 

@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Toaster } from '@/components/ui/sonner'
-import { DataTable } from '@/app/components/ui/data-table'
+import { DataTable } from '@/components/ui/data-table'
+import { AdminHeader } from '@/components/admin/admin-header'
 
 import { ticketColumns } from './columns'
 import { Ticket } from '@/app/types/ticket'
@@ -166,13 +167,12 @@ export default function ChamadosPage() {
 
   return (
     <div className="container py-10 max-w-7xl">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gerenciamento de Chamados</h1>
-          <p className="text-neutral-600 mt-1">
-            Gerencie todos os chamados recebidos pela escola
-          </p>
-        </div>
+      <AdminHeader 
+        title="Gerenciamento de Chamados" 
+        description="Gerencie todos os chamados recebidos pela escola"
+      />
+      
+      <div className="flex justify-end items-center mb-6">
         <div className="flex space-x-2">
           <Button variant="outline" onClick={handleExportCSV}>
             <Download className="h-4 w-4 mr-2" />

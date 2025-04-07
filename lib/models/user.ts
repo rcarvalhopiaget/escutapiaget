@@ -161,9 +161,20 @@ userSchema.pre('save', function(next) {
 // Método para comparar senhas
 userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
   try {
-    return await bcrypt.compare(candidatePassword, this.password)
+    console.log('[User Model] Comparando senha fornecida com a senha armazenada');
+    console.log('[User Model] Senha fornecida (primeiros 3 caracteres):', candidatePassword.substring(0, 3) + '***');
+    console.log('[User Model] Senha armazenada existe?', !!this.password);
+    if (!this.password) {
+      console.log('[User Model] ERRO: Senha armazenada está vazia ou não definida!');
+      return false;
+    }
+    
+    const isMatch = await bcrypt.compare(candidatePassword, this.password);
+    console.log('[User Model] Resultado da comparação:', isMatch);
+    return isMatch;
   } catch (error) {
-    return false
+    console.error('[User Model] Erro ao comparar senhas:', error);
+    return false;
   }
 }
 

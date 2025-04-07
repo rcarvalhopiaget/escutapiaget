@@ -191,7 +191,7 @@ function FormularioContent() {
           </ul>
 
           <h3 className="text-lg font-semibold mt-6 mb-2 text-amber-700">Nosso Compromisso</h3>
-          <p className="mb-4 text-sm">A Escola Piaget está comprometida em proporcionar um ambiente seguro e acolhedor para todos os alunos. Trabalhamos ativamente na prevenção do bullying através de programas educativos e da promoção do respeito mútuo e da empatia.</p>
+          <p className="mb-4 text-sm">A 2Clicks está comprometida em proporcionar um ambiente seguro e acolhedor para todos os alunos. Trabalhamos ativamente na prevenção do bullying através de programas educativos e da promoção do respeito mútuo e da empatia.</p>
 
           <h3 className="text-lg font-semibold mt-6 mb-2 text-amber-700">Precisa de Ajuda Imediata?</h3>
           <p className="text-sm">Para situações que exigem intervenção imediata, procure diretamente nossa coordenadora pedagógica ou ligue para a secretaria da escola: <a href="tel:+551199999999" className="text-blue-600 hover:underline font-medium">(11) 9999-9999</a>.</p>
@@ -202,7 +202,7 @@ function FormularioContent() {
       {tipoParam === TicketType.PRIVACIDADE && (
         <div className="mb-8 p-6 bg-blue-50 border border-blue-200 rounded-lg text-neutral-800">
           <h2 className="text-xl font-semibold mb-3 text-blue-800">Proteção de Dados Pessoais</h2>
-          <p className="mb-4 text-sm">A Escola Piaget está comprometida com a proteção dos seus dados pessoais. De acordo com a Lei Geral de Proteção de Dados (LGPD), você possui diversos direitos relacionados aos seus dados.</p>
+          <p className="mb-4 text-sm">A 2Clicks está comprometida com a proteção dos seus dados pessoais. De acordo com a Lei Geral de Proteção de Dados (LGPD), você possui diversos direitos relacionados aos seus dados.</p>
           
           <h3 className="text-lg font-semibold mt-6 mb-2 text-blue-700">Seus Direitos</h3>
           <ul className="list-disc list-inside mb-4 space-y-1 text-sm">

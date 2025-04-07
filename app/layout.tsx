@@ -4,8 +4,8 @@ import { Providers } from './providers';
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
-  title: "Escola Piaget - Portal",
-  description: "Sistema de chamados e portal da Escola Piaget",
+  title: "2Clicks - Portal",
+  description: "Sistema de chamados e portal da 2Clicks",
 };
 
 export default function RootLayout({

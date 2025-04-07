@@ -188,7 +188,7 @@ function getBaseEmailHtml(content: string): string {
                 <tr>
                   <td style="background-color: #f1f5f9; text-align: center; padding: 15px; border-radius: 0 0 8px 8px;">
                     <p style="margin: 0; color: #64748b; font-size: 14px;">
-                      © ${new Date().getFullYear()} Colégio Piaget - Todos os direitos reservados
+                      © ${new Date().getFullYear()} 2Clicks - Todos os direitos reservados
                     </p>
                   </td>
                 </tr>
