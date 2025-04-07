@@ -131,6 +131,52 @@ export const authOptions: NextAuthOptions = {
     maxAge: 24 * 60 * 60, // 24 horas
   },
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === 'google') {
+        console.log('[GoogleSignIn] Usuário autenticado via Google:', user.email);
+        
+        try {
+          await dbConnect();
+          
+          // Verifica se o usuário já existe no banco de dados
+          let dbUser = await User.findOne({ email: user.email });
+          
+          if (!dbUser) {
+            console.log('[GoogleSignIn] Usuário não encontrado no banco. Criando novo usuário.');
+            // Se o usuário não existir, cria um novo com permissões padrão
+            dbUser = await User.create({
+              name: user.name,
+              email: user.email,
+              // Por padrão, usuários do Google serão "staff" - modifique conforme necessário
+              role: 'staff',
+              department: 'Geral',
+              permissions: {
+                viewTickets: true,
+                respondTickets: true,
+                viewDashboard: true,
+                // Outras permissões podem ser adicionadas conforme necessário
+              }
+            });
+            console.log('[GoogleSignIn] Novo usuário criado:', dbUser.email);
+          } else {
+            console.log('[GoogleSignIn] Usuário encontrado no banco:', dbUser.email);
+            
+            // Atualiza as propriedades do objeto user com as informações do banco
+            user.role = dbUser.role;
+            user.id = dbUser._id.toString();
+            user.department = dbUser.department;
+            user.permissions = dbUser.permissions;
+          }
+          
+          return true;
+        } catch (error) {
+          console.error('[GoogleSignIn] Erro ao processar usuário Google:', error);
+          return true; // Ainda permite login mesmo com erro, mas sem permissões extras
+        }
+      }
+      
+      return true; // Mantém o fluxo normal para outros provedores
+    },
     async jwt({ token, user }) {
       console.log('[NextAuth] Callback JWT:', { 
         tokenExists: !!token, 
