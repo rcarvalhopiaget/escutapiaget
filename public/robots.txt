@@ -1,0 +1,6 @@
+# Arquivo robots.txt para EscutaPiaget
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://escutapiaget.up.railway.app/sitemap.xml 

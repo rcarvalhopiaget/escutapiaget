@@ -25,6 +25,14 @@ const nextConfig = {
     }
     return config;
   },
+  output: 'standalone', // Otimização para Docker
+  poweredByHeader: false, // Remove o header X-Powered-By para segurança
+  
+  // Configurações adicionais para o Railway
+  experimental: {
+    // Otimização para produção em ambientes como o Railway
+    outputFileTracingRoot: undefined,
+  },
 };
 
 export default nextConfig;
