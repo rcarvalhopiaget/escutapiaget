@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn, useSession } from 'next-auth/react'
 import { z } from 'zod'
@@ -23,7 +23,8 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
-export default function LoginPage() {
+// Componente que usa o useSearchParams
+function LoginForm() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()
@@ -155,5 +156,21 @@ export default function LoginPage() {
       
       <Toaster position="top-right" />
     </div>
+  )
+}
+
+// Componente principal com Suspense
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center p-4 bg-neutral-50">
+        <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-gray-500" />
+          <p className="mt-4 text-neutral-600">Carregando...</p>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 } 

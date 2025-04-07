@@ -8,6 +8,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+# Adicionar sharp para otimização de imagens
+RUN npm install sharp
+
 # Estágio de build
 FROM base AS builder
 WORKDIR /app
