@@ -32,6 +32,7 @@ function LoginForm() {
   const callbackUrl = searchParams.get('from') || searchParams.get('callbackUrl') || '/admin/dashboard'
   const [isLoading, setIsLoading] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
+  const [redirectAttempts, setRedirectAttempts] = useState(0)
 
   // Configuração do formulário com React Hook Form e validação Zod
   const { 
@@ -45,17 +46,39 @@ function LoginForm() {
 
   // Efeito para lidar com o redirecionamento quando já autenticado
   useEffect(() => {
+    console.log('[LoginForm] Status:', status);
+    console.log('[LoginForm] Session:', session);
+    console.log('[LoginForm] Redirect attempts:', redirectAttempts);
+    
     if (status === 'authenticated' && session?.user?.role === 'admin' && !redirecting) {
-      setRedirecting(true)
-      router.replace(callbackUrl)
+      // Evitar tentativas infinitas de redirecionamento
+      if (redirectAttempts > 3) {
+        console.log('[LoginForm] Muitas tentativas de redirecionamento, abortando');
+        toast.error('Erro no redirecionamento', {
+          description: 'Não foi possível redirecionar para o dashboard. Por favor, tente navegar manualmente.'
+        });
+        return;
+      }
+      
+      // Atualizar o contador de tentativas
+      setRedirectAttempts(prev => prev + 1);
+      
+      console.log('[LoginForm] Usuário autenticado como admin. Redirecionando para:', callbackUrl);
+      setRedirecting(true);
+      
+      // Usar window.location para forçar um redirecionamento completo
+      // Isso evita problemas com o router do Next.js
+      window.location.href = callbackUrl;
     }
-  }, [status, session, callbackUrl, router, redirecting])
+  }, [status, session, callbackUrl, router, redirecting, redirectAttempts]);
 
   // Função de submit do formulário
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true)
     
     try {
+      console.log('[LoginForm] Tentando login com:', data.email);
+      
       // Tentativa de login usando credenciais
       const result = await signIn('credentials', {
         redirect: false,
@@ -64,12 +87,16 @@ function LoginForm() {
         callbackUrl
       })
       
+      console.log('[LoginForm] Resultado do login:', result);
+      
       // Tratamento de erros
       if (result?.error) {
+        console.error('[LoginForm] Erro de login:', result.error);
         toast.error('Erro ao fazer login', {
           description: 'Credenciais inválidas. Verifique seu e-mail e senha.'
         })
       } else if (result?.ok) {
+        console.log('[LoginForm] Login bem-sucedido');
         toast.success('Login bem-sucedido!', {
           description: 'Você será redirecionado em instantes.'
         })
@@ -78,7 +105,7 @@ function LoginForm() {
         router.refresh()
       }
     } catch (error) {
-      console.error('Erro no processo de login:', error)
+      console.error('[LoginForm] Erro no processo de login:', error)
       toast.error('Erro ao fazer login', {
         description: 'Ocorreu um erro inesperado. Tente novamente mais tarde.'
       })
@@ -89,7 +116,7 @@ function LoginForm() {
 
   // Se está redirecionando, mostra o estado de carregamento
   if (redirecting) {
-    return <LoadingState message="Redirecionando..." />
+    return <LoadingState message="Redirecionando para o dashboard..." />
   }
 
   return (
@@ -155,6 +182,20 @@ function LoginForm() {
             Criar usuário admin
           </Button>
         </p>
+        
+        {/* Link de redirecionamento manual como fallback */}
+        {status === 'authenticated' && session?.user?.role === 'admin' && (
+          <p className="text-sm text-neutral-500 mt-4 border-t pt-4">
+            <span className="block mb-2">Se o redirecionamento automático não funcionar:</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => window.location.href = callbackUrl}
+            >
+              Ir para o Dashboard Manualmente
+            </Button>
+          </p>
+        )}
       </div>
     </div>
   )

@@ -32,17 +32,29 @@ export default function AuthGuard({
     viewAllDepartments: 'viewAllDepartments',
   } as const
 
+  // Função para verificar autenticação e permissões
   useEffect(() => {
+    console.log('[AuthGuard] Status da sessão:', status);
+    console.log('[AuthGuard] Sessão:', session);
+    console.log('[AuthGuard] Role necessária:', requiredRole);
+    console.log('[AuthGuard] Permissão necessária:', requiredPermission);
+    
     // Se a verificação de autenticação terminou e não há sessão, redireciona para login
     if (status === 'unauthenticated') {
-      router.replace('/admin/login')
-      return
+      console.log('[AuthGuard] Usuário não autenticado. Redirecionando para login.');
+      // Usar window.location para evitar problemas com o router do Next.js
+      window.location.href = '/admin/login';
+      return;
     }
     
     // Se está autenticado, mas não tem a role necessária, redireciona para página de acesso negado
     if (status === 'authenticated' && session?.user?.role !== requiredRole) {
-      router.replace('/admin/unauthorized')
-      return
+      console.log('[AuthGuard] Usuário autenticado, mas sem a role necessária:', {
+        userRole: session?.user?.role,
+        requiredRole
+      });
+      window.location.href = '/admin/unauthorized';
+      return;
     }
     
     // Se foi especificada uma permissão e o usuário não a possui, redireciona para página de acesso negado
@@ -51,8 +63,16 @@ export default function AuthGuard({
       requiredPermission && 
       !session?.user?.permissions?.[requiredPermission as keyof typeof permissionMap]
     ) {
-      router.replace('/admin/unauthorized')
-      return
+      console.log('[AuthGuard] Usuário sem a permissão necessária:', {
+        userPermissions: session?.user?.permissions,
+        requiredPermission
+      });
+      window.location.href = '/admin/unauthorized';
+      return;
+    }
+    
+    if (status === 'authenticated') {
+      console.log('[AuthGuard] Acesso permitido: usuário autenticado com role e permissões corretas');
     }
   }, [status, session, router, requiredRole, requiredPermission])
 
@@ -68,7 +88,7 @@ export default function AuthGuard({
     )
   }
 
-  // Se acesso negado, será redirecionado no useEffect
-  // Se autenticado e tem permissão, mostra o conteúdo
+  // Se status for authenticated, mostra o conteúdo
+  // (qualquer redirecionamento necessário já foi tratado no useEffect)
   return <>{children}</>
 } 

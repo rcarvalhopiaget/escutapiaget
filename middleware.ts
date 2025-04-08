@@ -30,29 +30,36 @@ const PUBLIC_ROUTES = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
+  console.log(`[Middleware] Verificando: ${pathname}`);
+  
   // Verifica se a rota está relacionada a autenticação ou é pública
   const isPublicApiRoute = pathname.startsWith('/api/auth') || pathname.startsWith('/api/debug')
   const isPublicPageRoute = PUBLIC_ROUTES.some(path => pathname === path || pathname.startsWith(`${path}/`))
 
   // Permite acesso a rotas públicas
-  if (isPublicPageRoute || isPublicApiRoute) {
+  if (isPublicApiRoute || isPublicPageRoute) {
+    console.log(`[Middleware] Rota pública permitida: ${pathname}`);
     return NextResponse.next()
   }
   
   // Verifica se a rota requer autenticação administrativa
   if (pathname.startsWith('/admin')) {
+    console.log(`[Middleware] Verificando autenticação para rota admin: ${pathname}`);
     const sessionCookieName = getSessionCookieName()
     const sessionCookie = request.cookies.get(sessionCookieName)
+    
+    console.log(`[Middleware] Cookie de sessão ${sessionCookieName} existe: ${!!sessionCookie}`);
 
     // Redireciona para login se não houver cookie de sessão
     if (!sessionCookie) {
+      console.log(`[Middleware] Sem cookie de sessão. Redirecionando para login.`);
       const url = new URL('/admin/login', request.url)
       url.searchParams.set('from', pathname)
       return NextResponse.redirect(url)
     }
     
     // Permite acesso se o cookie existir
-    // A verificação detalhada de token e permissões é feita na página/componente
+    console.log(`[Middleware] Cookie de sessão encontrado. Permitindo acesso a: ${pathname}`);
     return NextResponse.next()
   }
   
