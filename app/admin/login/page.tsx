@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn, useSession } from 'next-auth/react'
 import { z } from 'zod'
@@ -31,6 +31,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('from') || searchParams.get('callbackUrl') || '/admin/dashboard'
   const [isLoading, setIsLoading] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
 
   // Configuração do formulário com React Hook Form e validação Zod
   const { 
@@ -42,11 +43,13 @@ function LoginForm() {
     defaultValues: { email: '', password: '' }
   })
 
-  // Efeito de redirecionamento quando já estiver autenticado
-  if (status === 'authenticated' && session?.user?.role === 'admin') {
-    router.replace(callbackUrl)
-    return <LoadingState message="Redirecionando..." />
-  }
+  // Efeito para lidar com o redirecionamento quando já autenticado
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'admin' && !redirecting) {
+      setRedirecting(true)
+      router.replace(callbackUrl)
+    }
+  }, [status, session, callbackUrl, router, redirecting])
 
   // Função de submit do formulário
   async function onSubmit(data: LoginFormValues) {
@@ -73,11 +76,6 @@ function LoginForm() {
         
         // Atualiza o estado da sessão
         router.refresh()
-        
-        // Forçar o redirecionamento após um breve intervalo
-        setTimeout(() => {
-          router.replace(callbackUrl)
-        }, 1000)
       }
     } catch (error) {
       console.error('Erro no processo de login:', error)
@@ -87,6 +85,11 @@ function LoginForm() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Se está redirecionando, mostra o estado de carregamento
+  if (redirecting) {
+    return <LoadingState message="Redirecionando..." />
   }
 
   return (
