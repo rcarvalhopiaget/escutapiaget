@@ -58,7 +58,9 @@ export default function DashboardPage() {
     // Se não autenticado, redirecionar para login
     if (status === 'unauthenticated') {
       console.log('[DashboardPage] Usuário não autenticado. Redirecionando para login.')
-      router.push('/admin/login?from=/admin/dashboard')
+      // Adicionar timestamp para evitar cache
+      const timestamp = new Date().getTime();
+      router.push(`/admin/login?from=/admin/dashboard&t=${timestamp}`)
       return;
     }
     
@@ -66,7 +68,7 @@ export default function DashboardPage() {
     if (status === 'authenticated') {
       console.log('[DashboardPage] Usuário autenticado:', session?.user?.email)
       console.log('[DashboardPage] Role do usuário:', session?.user?.role)
-      console.log('[DashboardPage] Permissões:', session?.user?.permissions)
+      console.log('[DashboardPage] Permissões:', JSON.stringify(session?.user?.permissions))
       
       const canViewDashboard = session?.user?.permissions?.viewDashboard || session?.user?.role === 'admin';
       
@@ -82,20 +84,22 @@ export default function DashboardPage() {
     }
   }, [status, session, router])
   
-  // Função para buscar os tickets (agora chamada pelo useEffect acima)
+  // Função para buscar os tickets
   const fetchTickets = async () => {
     try {
+      console.log('[DashboardPage] Iniciando busca de tickets...');
       const response = await fetch('/api/admin/tickets')
       const data = await response.json()
       
       if (response.ok) {
+        console.log(`[DashboardPage] ${data.tickets?.length || 0} tickets encontrados`);
         setTickets(data.tickets || [])
       } else {
-        console.error('Erro ao buscar tickets:', data.error)
+        console.error('[DashboardPage] Erro ao buscar tickets:', data.error)
         toast.error('Erro ao carregar dados', { description: data.error || 'Falha ao buscar tickets.' })
       }
     } catch (error) {
-      console.error('Erro ao buscar tickets:', error)
+      console.error('[DashboardPage] Erro ao buscar tickets:', error)
       toast.error('Erro ao carregar dados', { description: 'Falha na comunicação com o servidor.' })
     } finally {
       setIsLoading(false) // Definir isLoading como false após a tentativa
