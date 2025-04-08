@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn, useSession } from 'next-auth/react'
 import { z } from 'zod'
@@ -12,6 +12,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 
+// Schema de validação do formulário de login
 const loginSchema = z.object({
   email: z.string().email({
     message: 'Digite um e-mail válido'
@@ -23,105 +24,63 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
-// Componente que usa o useSearchParams
+// Componente de formulário de login otimizado
 function LoginForm() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('from') || searchParams.get('callbackUrl') || '/admin/dashboard'
   const [isLoading, setIsLoading] = useState(false)
-  const [manualRedirectAttempted, setManualRedirectAttempted] = useState(false)
 
-  // RESTAURAR o useEffect para redirecionar quando autenticado
-  useEffect(() => {
-    console.log('[LoginForm] Status da sessão:', status)
-    console.log('[LoginForm] Sessão:', session)
-    
-    if (status === 'authenticated') {
-      console.log('[LoginForm] Usuário autenticado, preparando redirecionamento para:', callbackUrl)
-      
-      // Verificar se o usuário tem a role de admin antes de redirecionar
-      const userRole = session?.user?.role
-      console.log('[LoginForm] Role do usuário:', userRole)
-      
-      if (userRole === 'admin') {
-        console.log('[LoginForm] Usuário é admin, prosseguindo com redirecionamento')
-        
-        // Forçar uma pausa para garantir que o token JWT seja processado completamente
-        const redirectTimer = setTimeout(() => {
-          console.log('[LoginForm] Executando redirecionamento para admin...')
-          // Usar window.location diretamente para forçar recarregamento completo
-          window.location.href = callbackUrl
-        }, 1000)
-        
-        return () => clearTimeout(redirectTimer)
-      } else {
-        console.log('[LoginForm] Usuário NÃO é admin, possível erro de permissão')
-        toast.error('Acesso Negado', { 
-          description: 'Você não tem permissão para acessar o painel administrativo.' 
-        })
-      }
-    }
-  }, [status, router, callbackUrl, session])
-
-  // Função auxiliar para forçar redirecionamento
-  const forceRedirect = () => {
-    console.log('[LoginForm] Forçando redirecionamento direto para:', callbackUrl)
-    
-    // Tentar um redirecionamento clássico como fallback
-    if (!manualRedirectAttempted) {
-      setManualRedirectAttempted(true)
-      
-      // Usar diretamente window.location para garantir que os cookies sejam aplicados
-      window.location.href = callbackUrl
-    }
-  }
-
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
+  // Configuração do formulário com React Hook Form e validação Zod
+  const { 
+    register, 
+    handleSubmit, 
+    formState: { errors } 
+  } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: ''
-    }
+    defaultValues: { email: '', password: '' }
   })
 
+  // Efeito de redirecionamento quando já estiver autenticado
+  if (status === 'authenticated' && session?.user?.role === 'admin') {
+    router.replace(callbackUrl)
+    return <LoadingState message="Redirecionando..." />
+  }
+
+  // Função de submit do formulário
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true)
     
     try {
-      console.log(`[LoginForm] Tentando login para redirecionar para: ${callbackUrl}`)
-      
-      // Modificar signIn para usar redirect: false para lidar com o redirecionamento no useEffect
+      // Tentativa de login usando credenciais
       const result = await signIn('credentials', {
-        redirect: false, // Use false para lidar com redirecionamento manualmente
+        redirect: false,
         email: data.email,
         password: data.password,
-        callbackUrl: callbackUrl 
+        callbackUrl
       })
       
-      // Se signIn retornar um erro (não redirecionou)
+      // Tratamento de erros
       if (result?.error) {
-        console.log('[LoginForm] Erro retornado pelo signIn:', result.error)
         toast.error('Erro ao fazer login', {
           description: 'Credenciais inválidas. Verifique seu e-mail e senha.'
         })
       } else if (result?.ok) {
-        // Mostrar notificação de sucesso
-        toast.success('Login bem-sucedido! Aguarde...'); 
+        toast.success('Login bem-sucedido!', {
+          description: 'Você será redirecionado em instantes.'
+        })
         
-        // Forçar uma atualização da sessão antes de redirecionar
+        // Atualiza o estado da sessão
         router.refresh()
         
-        // Esperar um pouco mais para garantir que a sessão seja atualizada
+        // Forçar o redirecionamento após um breve intervalo
         setTimeout(() => {
-          console.log('[LoginForm] Tentando redirecionamento manual após login bem-sucedido')
-          // Usar window.location para garantir recarregamento completo
-          window.location.href = callbackUrl
-        }, 1500)
+          router.replace(callbackUrl)
+        }, 1000)
       }
-      
     } catch (error) {
-      console.error('[LoginForm] Erro inesperado no onSubmit:', error)
+      console.error('Erro no processo de login:', error)
       toast.error('Erro ao fazer login', {
         description: 'Ocorreu um erro inesperado. Tente novamente mais tarde.'
       })
@@ -130,96 +89,93 @@ function LoginForm() {
     }
   }
 
-  // Se a pessoa já estiver autenticada mas ainda estiver nesta página
-  if (status === 'authenticated' && !manualRedirectAttempted) {
-    console.log('[LoginForm] Já autenticado mas ainda na página de login. Forçando redirecionamento...')
-    forceRedirect()
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-neutral-50">
-      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold">Painel Administrativo</h1>
-          <p className="text-neutral-600">Acesso restrito à equipe autorizada</p>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">E-mail</label>
-            <Input 
-              placeholder="seu-email@exemplo.com" 
-              {...register('email')} 
-              autoComplete="email"
-            />
-            {errors.email && (
-              <p className="text-sm font-medium text-red-500">{errors.email.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Senha</label>
-            <Input 
-              type="password" 
-              placeholder="••••••••" 
-              {...register('password')} 
-              autoComplete="current-password"
-            />
-            {errors.password && (
-              <p className="text-sm font-medium text-red-500">{errors.password.message}</p>
-            )}
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Entrando...
-              </>
-            ) : (
-              'Entrar'
-            )}
-          </Button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-sm text-neutral-500">
-            Esqueceu a senha? Entre em contato com o administrador do sistema.
-          </p>
-          <p className="text-sm text-neutral-500 mt-2">
-            <Button variant="link" className="p-0 h-auto" onClick={() => router.push('/admin/setup')}>
-              Configuração inicial do sistema
-            </Button>
-          </p>
-          <p className="text-sm text-neutral-500 mt-2">
-            <Button variant="link" className="p-0 h-auto" onClick={() => router.push('/admin/criar-admin')}>
-              Criar usuário admin
-            </Button>
-          </p>
-        </div>
+    <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold">Painel Administrativo</h1>
+        <p className="text-neutral-600">Acesso restrito à equipe autorizada</p>
       </div>
-      
-      <Toaster position="top-right" />
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <div className="space-y-2">
+          <label className="text-sm font-medium">E-mail</label>
+          <Input 
+            placeholder="seu-email@exemplo.com" 
+            {...register('email')} 
+            autoComplete="email"
+          />
+          {errors.email && (
+            <p className="text-sm font-medium text-red-500">{errors.email.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Senha</label>
+          <Input 
+            type="password" 
+            placeholder="••••••••" 
+            {...register('password')} 
+            autoComplete="current-password"
+          />
+          {errors.password && (
+            <p className="text-sm font-medium text-red-500">{errors.password.message}</p>
+          )}
+        </div>
+
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Entrando...
+            </>
+          ) : (
+            'Entrar'
+          )}
+        </Button>
+      </form>
+
+      <div className="mt-6 text-center">
+        <p className="text-sm text-neutral-500">
+          Esqueceu a senha? Entre em contato com o administrador do sistema.
+        </p>
+        <p className="text-sm text-neutral-500 mt-2">
+          <Button variant="link" className="p-0 h-auto" onClick={() => router.push('/admin/setup')}>
+            Configuração inicial do sistema
+          </Button>
+        </p>
+        <p className="text-sm text-neutral-500 mt-2">
+          <Button variant="link" className="p-0 h-auto" onClick={() => router.push('/admin/criar-admin')}>
+            Criar usuário admin
+          </Button>
+        </p>
+      </div>
     </div>
   )
 }
 
-// Componente principal com Suspense
-export default function LoginPage() {
+// Componente de estado de carregamento
+function LoadingState({ message = 'Carregando...' }) {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center p-4 bg-neutral-50">
-        <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-gray-500" />
-          <p className="mt-4 text-neutral-600">Carregando...</p>
-        </div>
-      </div>
-    }>
-      <LoginForm />
-    </Suspense>
+    <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md text-center">
+      <Loader2 className="mx-auto h-8 w-8 animate-spin text-gray-500" />
+      <p className="mt-4 text-neutral-600">{message}</p>
+    </div>
+  )
+}
+
+// Componente principal da página de login
+export default function LoginPage() {
+  const { status } = useSession()
+  const isLoading = status === 'loading'
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-neutral-50">
+      {isLoading ? <LoadingState /> : <LoginForm />}
+      <Toaster position="top-right" />
+    </div>
   )
 } 

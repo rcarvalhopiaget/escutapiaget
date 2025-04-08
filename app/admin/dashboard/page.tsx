@@ -36,6 +36,7 @@ import {
 
 import { Ticket, TicketStatus } from '@/app/types/ticket'
 import { AdminHeader } from '@/components/admin/admin-header'
+import AuthGuard from '../components/auth-guard'
 
 // Tipos de período para filtragem
 type PeriodOption = '7' | '30' | '90' | '180' | '365'
@@ -200,171 +201,173 @@ export default function DashboardPage() {
   
   // Renderizar o dashboard apenas se autenticado e com permissão (verificado no useEffect)
   return (
-    <div className="container py-10 max-w-7xl">
-      <AdminHeader 
-        title="Dashboard" 
-        description="Visualize dados e métricas do sistema de ouvidoria"
-      />
-      
-      <div className="flex justify-between items-center mb-8">
-        <div /> {/* Espaço vazio para manter o alinhamento */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Período:</span>
-          <Select
-            value={period}
-            onValueChange={(value) => setPeriod(value as PeriodOption)}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Selecione o período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Últimos 7 dias</SelectItem>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-              <SelectItem value="90">Últimos 90 dias</SelectItem>
-              <SelectItem value="180">Últimos 180 dias</SelectItem>
-              <SelectItem value="365">Último ano</SelectItem>
-            </SelectContent>
-          </Select>
+    <AuthGuard requiredRole="admin" requiredPermission="viewDashboard">
+      <div className="container py-10 max-w-7xl">
+        <AdminHeader 
+          title="Dashboard" 
+          description="Visualize dados e métricas do sistema de ouvidoria"
+        />
+        
+        <div className="flex justify-between items-center mb-8">
+          <div /> {/* Espaço vazio para manter o alinhamento */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Período:</span>
+            <Select
+              value={period}
+              onValueChange={(value) => setPeriod(value as PeriodOption)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Selecione o período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Últimos 7 dias</SelectItem>
+                <SelectItem value="30">Últimos 30 dias</SelectItem>
+                <SelectItem value="90">Últimos 90 dias</SelectItem>
+                <SelectItem value="180">Últimos 180 dias</SelectItem>
+                <SelectItem value="365">Último ano</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        {/* Cards com métricas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          {/* Card de total de chamados no período */}
+          <Card className="bg-blue-500 text-white overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-lg font-medium">
+                <MessageSquare className="h-5 w-5 mr-2" />
+                Relatos no período
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-center">
+                <p className="text-6xl font-bold">{filteredTickets.length}</p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Card de procedentes */}
+          <Card className="bg-green-600 text-white overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-lg font-medium">
+                <ThumbsUp className="h-5 w-5 mr-2" />
+                Procedentes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <p className="text-5xl font-bold">{procedentesTotalmente}</p>
+                  <p className="text-sm mt-1">totalmente</p>
+                </div>
+                <div>
+                  <p className="text-5xl font-bold">{procedentesParcialmente}</p>
+                  <p className="text-sm mt-1">parcialmente</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Card de improcedentes */}
+          <Card className="bg-yellow-500 text-white overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-lg font-medium">
+                <ThumbsDown className="h-5 w-5 mr-2" />
+                Improcedentes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <p className="text-5xl font-bold">{improcedentesTotalmente}</p>
+                  <p className="text-sm mt-1">totalmente</p>
+                </div>
+                <div>
+                  <p className="text-5xl font-bold">{improcedentesDadosInsuf}</p>
+                  <p className="text-sm mt-1">dados insuf.</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Card de descartados */}
+          <Card className="bg-red-500 text-white overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-lg font-medium">
+                <XCircle className="h-5 w-5 mr-2" />
+                Descartados
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <p className="text-5xl font-bold">{descartadosNaoQualif}</p>
+                  <p className="text-sm mt-1">não qualif.</p>
+                </div>
+                <div>
+                  <p className="text-5xl font-bold">{descartadosTotalmente}</p>
+                  <p className="text-sm mt-1">totalmente</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Gráficos */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Gráfico de Relatos por Conclusão */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Relatos por Conclusão</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={typeChartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#8884d8" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Gráfico de Distribuição por Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Distribuição por Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={statusChartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    >
+                      {statusChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    {/* <Legend /> */}
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-      
-      {/* Cards com métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        {/* Card de total de chamados no período */}
-        <Card className="bg-blue-500 text-white overflow-hidden">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center text-lg font-medium">
-              <MessageSquare className="h-5 w-5 mr-2" />
-              Relatos no período
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-center">
-              <p className="text-6xl font-bold">{filteredTickets.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Card de procedentes */}
-        <Card className="bg-green-600 text-white overflow-hidden">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center text-lg font-medium">
-              <ThumbsUp className="h-5 w-5 mr-2" />
-              Procedentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div>
-                <p className="text-5xl font-bold">{procedentesTotalmente}</p>
-                <p className="text-sm mt-1">totalmente</p>
-              </div>
-              <div>
-                <p className="text-5xl font-bold">{procedentesParcialmente}</p>
-                <p className="text-sm mt-1">parcialmente</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Card de improcedentes */}
-        <Card className="bg-yellow-500 text-white overflow-hidden">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center text-lg font-medium">
-              <ThumbsDown className="h-5 w-5 mr-2" />
-              Improcedentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div>
-                <p className="text-5xl font-bold">{improcedentesTotalmente}</p>
-                <p className="text-sm mt-1">totalmente</p>
-              </div>
-              <div>
-                <p className="text-5xl font-bold">{improcedentesDadosInsuf}</p>
-                <p className="text-sm mt-1">dados insuf.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Card de descartados */}
-        <Card className="bg-red-500 text-white overflow-hidden">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center text-lg font-medium">
-              <XCircle className="h-5 w-5 mr-2" />
-              Descartados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div>
-                <p className="text-5xl font-bold">{descartadosNaoQualif}</p>
-                <p className="text-sm mt-1">não qualif.</p>
-              </div>
-              <div>
-                <p className="text-5xl font-bold">{descartadosTotalmente}</p>
-                <p className="text-sm mt-1">totalmente</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Gráficos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Gráfico de Relatos por Conclusão */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Relatos por Conclusão</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={typeChartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#8884d8" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Gráfico de Distribuição por Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Distribuição por Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusChartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                  >
-                    {statusChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  {/* <Legend /> */}
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    </AuthGuard>
   )
 } 
