@@ -8,12 +8,19 @@ const nextConfig = {
     // Ignorar erros de TypeScript durante build
     ignoreBuildErrors: true,
   },
-  // Aumentar timeout e simplificar a build
+  // Aumentar timeout para geração de páginas estáticas
   staticPageGenerationTimeout: 180,
+  // Desativar modo estrito do React para maior compatibilidade
   reactStrictMode: false,
+  // Configurações para ambiente de produção
+  productionBrowserSourceMaps: false,
+  swcMinify: true,
+  // Modificações experimentais
   experimental: {
-    // Simplificar opções experimentais para maior compatibilidade
+    // Opções para maior compatibilidade
     serverMinification: true,
+    // Desabilitar recursos experimentais problemáticos
+    serverActions: false,
   },
   webpack: (config, { isServer }) => {
     // Resolver problemas de fallback para módulos do Node.js no browser
@@ -30,30 +37,36 @@ const nextConfig = {
       };
     }
     
-    // Garantir que o build não falhe por falta de memória
-    config.optimization = {
-      ...config.optimization,
-      minimize: true,
-      // Desativar minimização de CSS que pode causar problemas
-      minimizer: config.optimization.minimizer?.filter(
-        minimizer => !(minimizer.constructor.name === 'CssMinimizerPlugin')
-      ),
-    };
-    
     return config;
   },
-  // Configurações críticas para Docker
+  // Configuração essencial para Docker - permite executar standalone
   output: 'standalone',
+  // Remover cabeçalho "X-Powered-By"
   poweredByHeader: false,
+  // Ativar compressão
   compress: true,
-  // Configurações simplificadas de imagem
+  // Configurações de imagem
   images: {
     deviceSizes: [640, 750, 828, 1080, 1920],
     imageSizes: [16, 32, 64, 96, 128, 256],
     formats: ['image/webp'],
+    // Permitir domínios externos específicos
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
   },
-  // Configurações de diretório
+  // Otimizar para produção
   distDir: '.next',
+  // Usar métodos otimizados de roteamento
+  skipTrailingSlashRedirect: true,
+  // Configurações de ambiente
+  env: {
+    // Permitir build sem variáveis de ambiente específicas
+    MONGODB_URI: process.env.MONGODB_URI || 'mongodb://placeholder:placeholder@placeholder:27017/placeholder',
+  },
 };
 
 export default nextConfig;

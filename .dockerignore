@@ -1,44 +1,68 @@
-# Dependências e pasta de build
+# Diretórios de dependências e build
 node_modules
 .next
 out
+dist
+build
+coverage
 
-# Arquivos de logs
+# Arquivos de desenvolvimento
+.git
+.github
+.vscode
+.idea
+.env*
+!.env.example
+
+# Arquivos de log
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Arquivos locais de ambiente
-.env
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos temporários
+*.swp
+*.swo
+.cache
+tmp
+temp
+
+# Arquivos de teste
+__tests__
+**/*.test.js
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.js
+**/*.spec.ts
+**/*.spec.tsx
+
+# Arquivos de documentação
+docs
+README.md
+LICENSE
+CHANGELOG.md
+CONTRIBUTING.md
+
+# Outros arquivos de configuração
+.editorconfig
+.eslintrc*
+.prettierrc*
+.stylelintrc*
+tsconfig.tsbuildinfo
+jest.config.*
+babel.config.*
+
+# Dockerfile e relacionados (exceto o próprio Dockerfile)
+docker-compose*
+.dockerignore
+
+# Arquivos locais para desenvolvimento
+*.local
 .env.local
 .env.development.local
 .env.test.local
-.env.production.local
-
-# Arquivos temporários
-.DS_Store
-.idea
-.vscode
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Diretório de cache
-.cache
-.turbo
-
-# Diretório de testes
-coverage
-__tests__
-
-# Outros arquivos desnecessários para a build
-README.md
-*.md
-.git
-.github
-Dockerfile
-.dockerignore
-docker-compose* 
+.env.production.local 

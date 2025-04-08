@@ -1,5 +1,5 @@
 import dbConnect from '@/lib/mongodb'
-import { TicketFormData, TicketStatus, TicketType } from '@/app/types/ticket'
+import { TicketFormData, TicketStatus, TicketType, Ticket as TicketInterface } from '@/app/types/ticket'
 import { calculateDeadlineDate, generateProtocol, generateUUID } from '@/lib/utils'
 import Ticket from '@/lib/models/ticket'
 import { sendTicketNotification, sendStatusUpdateNotification } from '@/lib/email-service'
@@ -105,7 +105,7 @@ interface TicketFilters {
 
 interface GetTicketsResult {
   success: boolean
-  tickets: TicketType[]
+  tickets: TicketInterface[]
   error?: string
 }
 
@@ -135,8 +135,8 @@ export async function getTickets(filters: TicketFilters = {}): Promise<GetTicket
     // Buscar tickets no banco de dados
     const ticketsData = await Ticket.find(query).sort({ createdAt: -1 }).lean()
     
-    // Mapear os documentos do MongoDB para o formato da interface TicketType
-    const tickets = ticketsData.map(ticket => ({
+    // Mapear os documentos do MongoDB para o formato da interface TicketInterface
+    const tickets = ticketsData.map((ticket: any) => ({
       id: ticket._id.toString(),
       protocol: ticket.protocol,
       type: ticket.type,
@@ -148,7 +148,7 @@ export async function getTickets(filters: TicketFilters = {}): Promise<GetTicket
       response: ticket.response || '',
       createdAt: ticket.createdAt.toISOString(),
       updatedAt: ticket.updatedAt.toISOString(),
-    }))
+    })) as TicketInterface[]
     
     return {
       success: true,
@@ -169,7 +169,7 @@ export async function getTickets(filters: TicketFilters = {}): Promise<GetTicket
  */
 export async function getTicketByProtocol(protocol: string): Promise<{
   success: boolean
-  ticket?: TicketType
+  ticket?: TicketInterface
   error?: string
 }> {
   try {
@@ -186,20 +186,20 @@ export async function getTicketByProtocol(protocol: string): Promise<{
       }
     }
     
-    // Converter para o formato da interface TicketType
-    const ticket: TicketType = {
-      id: ticketData._id.toString(),
-      protocol: ticketData.protocol,
-      type: ticketData.type,
-      category: ticketData.category || '',
-      status: ticketData.status,
-      name: ticketData.name || '',
-      email: ticketData.email || '',
-      message: ticketData.message,
-      response: ticketData.response || '',
-      createdAt: ticketData.createdAt.toISOString(),
-      updatedAt: ticketData.updatedAt.toISOString(),
-    }
+    // Converter para o formato da interface TicketInterface
+    const ticket = {
+      id: (ticketData as any)._id.toString(),
+      protocol: (ticketData as any).protocol,
+      type: (ticketData as any).type,
+      category: (ticketData as any).category || '',
+      status: (ticketData as any).status,
+      name: (ticketData as any).name || '',
+      email: (ticketData as any).email || '',
+      message: (ticketData as any).message,
+      response: (ticketData as any).response || '',
+      createdAt: (ticketData as any).createdAt.toISOString(),
+      updatedAt: (ticketData as any).updatedAt.toISOString(),
+    } as TicketInterface
     
     return {
       success: true,
