@@ -14,13 +14,12 @@ const nextConfig = {
   reactStrictMode: false,
   // Configurações para ambiente de produção
   productionBrowserSourceMaps: false,
-  swcMinify: true,
   // Modificações experimentais
   experimental: {
     // Opções para maior compatibilidade
     serverMinification: true,
     // Desabilitar recursos experimentais problemáticos
-    serverActions: false,
+    serverActions: {},
   },
   webpack: (config, { isServer }) => {
     // Resolver problemas de fallback para módulos do Node.js no browser

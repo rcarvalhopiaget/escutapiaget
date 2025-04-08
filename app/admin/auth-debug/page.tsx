@@ -12,6 +12,7 @@ export default function AuthDebugPage() {
   const [serverInfo, setServerInfo] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [cookieValue, setCookieValue] = useState<string>('')
 
   // Função para buscar informações do servidor
   const fetchServerDebugInfo = async () => {
@@ -37,6 +38,11 @@ export default function AuthDebugPage() {
   // Buscar informações na montagem do componente
   useEffect(() => {
     fetchServerDebugInfo()
+  }, [])
+
+  // Adicionando effect para capturar os cookies após a montagem
+  useEffect(() => {
+    setCookieValue(document.cookie)
   }, [])
 
   return (
@@ -68,7 +74,7 @@ export default function AuthDebugPage() {
             <div>
               <h3 className="font-medium">Cookies do navegador:</h3>
               <pre className="text-sm mt-1 p-4 bg-neutral-100 rounded-md overflow-auto max-h-40">
-                {document.cookie ? document.cookie : 'Nenhum cookie encontrado ou acessível'}
+                {cookieValue ? cookieValue : 'Nenhum cookie encontrado ou acessível'}
               </pre>
             </div>
           </div>
