@@ -18,7 +18,8 @@ export async function middleware(request: NextRequest) {
   const publicPaths = [
     '/admin/login', 
     '/admin/login-debug', 
-    '/admin/auth-debug', 
+    '/admin/auth-debug',
+    '/admin/session-debug',
     '/admin/google-auth', 
     '/admin/unauthorized'
   ];

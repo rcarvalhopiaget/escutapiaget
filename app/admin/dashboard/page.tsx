@@ -60,7 +60,7 @@ export default function DashboardPage() {
       console.log('[DashboardPage] Usuário não autenticado. Redirecionando para login.')
       // Adicionar timestamp para evitar cache
       const timestamp = new Date().getTime();
-      router.push(`/admin/login?from=/admin/dashboard&t=${timestamp}`)
+      window.location.href = `/admin/login?from=/admin/dashboard&t=${timestamp}`
       return;
     }
     
@@ -70,10 +70,36 @@ export default function DashboardPage() {
       console.log('[DashboardPage] Role do usuário:', session?.user?.role)
       console.log('[DashboardPage] Permissões:', JSON.stringify(session?.user?.permissions))
       
-      const canViewDashboard = session?.user?.permissions?.viewDashboard || session?.user?.role === 'admin';
+      // Verificar se a sessão tem propriedade role definida
+      if (!session?.user?.role) {
+        console.log('[DashboardPage] ALERTA: Sessão não tem propriedade role definida')
+        console.log('[DashboardPage] Sessão completa:', JSON.stringify(session))
+        toast.error('Erro de Sessão', { 
+          description: 'Sua sessão não tem as informações necessárias. Tente fazer login novamente.' 
+        })
+        
+        // Redirecionar para debug se ambiente de desenvolvimento
+        if (process.env.NODE_ENV === 'development') {
+          router.push('/admin/session-debug')
+          return
+        } else {
+          // Em produção, redirecionar para login
+          const timestamp = new Date().getTime()
+          window.location.href = `/admin/login?from=/admin/dashboard&t=${timestamp}`
+          return
+        }
+      }
+      
+      const userRole = session?.user?.role
+      const userPermissions = session?.user?.permissions || {}
+      
+      const canViewDashboard = userPermissions.viewDashboard || userRole === 'admin';
       
       if (!canViewDashboard) {
         console.log('[DashboardPage] Acesso negado. Usuário não tem permissão para ver o dashboard.')
+        console.log('[DashboardPage] Role:', userRole)
+        console.log('[DashboardPage] Permissões:', JSON.stringify(userPermissions))
+        
         toast.error('Acesso Negado', { description: 'Você não tem permissão para acessar esta página.' })
         router.push('/admin/unauthorized') // Redirecionar para página de não autorizado
       } else {

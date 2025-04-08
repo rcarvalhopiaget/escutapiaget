@@ -38,15 +38,29 @@ function LoginForm() {
     console.log('[LoginForm] Sessão:', session)
     
     if (status === 'authenticated') {
-      console.log('[LoginForm] Usuário autenticado, redirecionando via useEffect para:', callbackUrl)
+      console.log('[LoginForm] Usuário autenticado, preparando redirecionamento para:', callbackUrl)
       
-      // Forçar uma pausa curta antes do redirecionamento
-      const redirectTimer = setTimeout(() => {
-        console.log('[LoginForm] Executando redirecionamento...')
-        router.push(callbackUrl)
-      }, 500)
+      // Verificar se o usuário tem a role de admin antes de redirecionar
+      const userRole = session?.user?.role
+      console.log('[LoginForm] Role do usuário:', userRole)
       
-      return () => clearTimeout(redirectTimer)
+      if (userRole === 'admin') {
+        console.log('[LoginForm] Usuário é admin, prosseguindo com redirecionamento')
+        
+        // Forçar uma pausa para garantir que o token JWT seja processado completamente
+        const redirectTimer = setTimeout(() => {
+          console.log('[LoginForm] Executando redirecionamento para admin...')
+          // Usar window.location diretamente para forçar recarregamento completo
+          window.location.href = callbackUrl
+        }, 1000)
+        
+        return () => clearTimeout(redirectTimer)
+      } else {
+        console.log('[LoginForm] Usuário NÃO é admin, possível erro de permissão')
+        toast.error('Acesso Negado', { 
+          description: 'Você não tem permissão para acessar o painel administrativo.' 
+        })
+      }
     }
   }, [status, router, callbackUrl, session])
 
@@ -58,14 +72,8 @@ function LoginForm() {
     if (!manualRedirectAttempted) {
       setManualRedirectAttempted(true)
       
-      // Router do Next
-      router.push(callbackUrl)
-      
-      // Fallback com window.location
-      setTimeout(() => {
-        console.log('[LoginForm] Último recurso: redirecionando via window.location')
-        window.location.href = callbackUrl
-      }, 1000)
+      // Usar diretamente window.location para garantir que os cookies sejam aplicados
+      window.location.href = callbackUrl
     }
   }
 
@@ -98,14 +106,18 @@ function LoginForm() {
           description: 'Credenciais inválidas. Verifique seu e-mail e senha.'
         })
       } else if (result?.ok) {
-        // Se signIn retornar ok, nosso useEffect vai detectar a sessão e redirecionar
-        toast.success('Login bem-sucedido! Redirecionando...'); 
+        // Mostrar notificação de sucesso
+        toast.success('Login bem-sucedido! Aguarde...'); 
         
-        // Como medida de segurança, vamos tentar força o redirecionamento após 1 segundo
+        // Forçar uma atualização da sessão antes de redirecionar
+        router.refresh()
+        
+        // Esperar um pouco mais para garantir que a sessão seja atualizada
         setTimeout(() => {
           console.log('[LoginForm] Tentando redirecionamento manual após login bem-sucedido')
-          forceRedirect()
-        }, 1000)
+          // Usar window.location para garantir recarregamento completo
+          window.location.href = callbackUrl
+        }, 1500)
       }
       
     } catch (error) {

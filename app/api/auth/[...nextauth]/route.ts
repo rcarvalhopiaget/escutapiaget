@@ -249,10 +249,23 @@ export const authOptions: NextAuthOptions = {
       
       if (session.user && token) {
         console.log('[Session] Atualizando sessão com dados do token');
-        session.user.id = token.id as string
-        session.user.role = token.role as string | null
-        session.user.department = token.department as string | null
-        session.user.permissions = token.permissions
+        
+        // Garantir que todos os campos importantes sejam definidos explicitamente
+        session.user = {
+          ...session.user,
+          id: token.id as string,
+          role: token.role as string | null,
+          department: token.department as string | null,
+          permissions: token.permissions,
+        };
+        
+        // Log adicional para garantir que os dados foram transferidos corretamente
+        console.log('[Session] Dados transferidos do token:', {
+          id: token.id,
+          role: token.role,
+          department: token.department,
+          permissions: token.permissions
+        });
       }
       
       console.log('[Session] Sessão atualizada:', { 
@@ -261,7 +274,8 @@ export const authOptions: NextAuthOptions = {
           name: session.user?.name,
           email: session.user?.email,
           role: session.user?.role,
-          department: session.user?.department
+          department: session.user?.department,
+          permissions: session.user?.permissions
         }
       });
       console.log('[Session] ------------------- FIM DO CALLBACK SESSION -------------------');
