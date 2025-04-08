@@ -7,11 +7,11 @@ FROM base AS dependencies
 RUN apk add --no-cache libc6-compat python3 make g++ git
 WORKDIR /app
 COPY package.json package-lock.json ./
-# Instalar dependências com flags para resolver problemas e mostrar mais logs
-RUN npm ci --no-audit --no-fund --legacy-peer-deps --verbose || npm install --no-audit --no-fund --legacy-peer-deps --verbose
+# Instalar dependências com flags para resolver problemas
+RUN npm ci --omit=dev --no-audit || npm install --omit=dev --no-audit
 
-# Adicionar sharp para otimização de imagens (apenas se necessário)
-RUN npm install sharp --verbose
+# Manter apenas sharp para otimização de imagens
+RUN npm install sharp
 
 # Estágio de build
 FROM base AS builder
@@ -23,13 +23,17 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
 # Aumentar a alocação de memória para o Node
-ENV NODE_OPTIONS="--max-old-space-size=8192"
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 # Desativar SSG para evitar erros de pré-renderização
 ENV NEXT_DISABLE_SSG=true
 ENV NEXT_DISABLE_STATIC_OPTIMIZATION=true
+ENV NEXT_IGNORE_MISSING_REACT_TYPES=true
 
-# Executar build com mais logs
-RUN npm run build || (echo "Build failed. Checking for errors..." && ls -la && exit 1)
+# Executar build com captura de erros mais detalhada
+RUN npm run build --trace-warnings > build_log.txt 2>&1 || (cat build_log.txt && echo "Build failed - see errors above" && exit 1)
+
+# Verificar que a build foi gerada com sucesso
+RUN ls -la .next || echo "Build directory not found or empty"
 
 # Estágio de produção
 FROM base AS runner

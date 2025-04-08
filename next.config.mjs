@@ -1,28 +1,23 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    // Permitir que o build prossiga mesmo com erros do ESLint
+    // Desativar verificação de ESLint durante build
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Permitir que o build prossiga mesmo com erros do TypeScript
+    // Ignorar erros de TypeScript durante build
     ignoreBuildErrors: true,
   },
-  // Aumentar o timeout da build para evitar falhas em sistemas com recursos limitados
-  experimental: {
-    // Adicionar opções experimentais que podem ajudar com problemas de build
-    serverMinification: true,
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    // Desativar pré-renderização estática que está causando erros
-    disableOptimizedLoading: true,
-  },
-  // Configuração específica para resolver problemas em build Docker
+  // Aumentar timeout e simplificar a build
   staticPageGenerationTimeout: 180,
-  reactStrictMode: false, // Desativar modo estrito para evitar renderizações duplicadas
+  reactStrictMode: false,
+  experimental: {
+    // Simplificar opções experimentais para maior compatibilidade
+    serverMinification: true,
+  },
   webpack: (config, { isServer }) => {
-    // Apenas no lado do cliente (browser)
+    // Resolver problemas de fallback para módulos do Node.js no browser
     if (!isServer) {
-      // Resolver módulos Node.js no lado do cliente
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
@@ -35,28 +30,29 @@ const nextConfig = {
       };
     }
     
-    // Otimizar a build do webpack
-    if (process.env.NODE_ENV === 'production') {
-      // Otimizar para tamanho em produção
-      config.optimization = {
-        ...config.optimization,
-        minimize: true,
-      };
-    }
+    // Garantir que o build não falhe por falta de memória
+    config.optimization = {
+      ...config.optimization,
+      minimize: true,
+      // Desativar minimização de CSS que pode causar problemas
+      minimizer: config.optimization.minimizer?.filter(
+        minimizer => !(minimizer.constructor.name === 'CssMinimizerPlugin')
+      ),
+    };
     
     return config;
   },
-  output: 'standalone', // Otimização para Docker
-  poweredByHeader: false, // Remove o header X-Powered-By para segurança
-  // Comprimir todas as páginas para melhorar o desempenho
+  // Configurações críticas para Docker
+  output: 'standalone',
+  poweredByHeader: false,
   compress: true,
-  // Configurações de imagem otimizadas
+  // Configurações simplificadas de imagem
   images: {
-    // Otimizar o cache de imagens
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    deviceSizes: [640, 750, 828, 1080, 1920],
+    imageSizes: [16, 32, 64, 96, 128, 256],
+    formats: ['image/webp'],
   },
-  // Definir a pasta de build personalizada (se necessário)
+  // Configurações de diretório
   distDir: '.next',
 };
 
