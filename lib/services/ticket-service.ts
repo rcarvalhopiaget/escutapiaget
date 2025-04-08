@@ -4,15 +4,6 @@ import { calculateDeadlineDate, generateProtocol, generateUUID } from '@/lib/uti
 import Ticket from '@/lib/models/ticket'
 import { sendTicketNotification, sendStatusUpdateNotification } from '@/lib/email-service'
 
-// Importação com tratamento de erro
-let TicketModel: any = null
-try {
-  // Importação dinâmica para evitar erro no cliente
-  TicketModel = require('@/lib/models/ticket').default
-} catch (error) {
-  console.warn('Não foi possível importar o modelo Ticket:', error)
-}
-
 export async function createTicket(data: TicketFormData) {
   try {
     // Tenta conectar ao MongoDB
@@ -22,14 +13,8 @@ export async function createTicket(data: TicketFormData) {
     const now = new Date()
     const deadlineDate = calculateDeadlineDate(data.type)
     
-    // Verifica se o modelo Ticket está disponível
-    if (!TicketModel) {
-      console.warn('Modelo Ticket não disponível, retornando resposta simulada')
-      return simulateTicketCreation(data, protocol, deadlineDate)
-    }
-    
     // Cria o ticket no MongoDB
-    const ticket = new TicketModel({
+    const ticket = new Ticket({
       protocol,
       type: data.type,
       category: data.category,
@@ -233,17 +218,12 @@ export async function getTicketById(id: string) {
   try {
     await dbConnect()
     
-    if (!TicketModel) {
-      console.warn('Modelo Ticket não disponível, retornando erro')
-      return { success: false, error: 'Chamado não encontrado' }
-    }
-    
-    const ticket = await TicketModel.findById(id)
+    const ticket = await Ticket.findById(id)
     if (!ticket) {
       return { success: false, error: 'Chamado não encontrado' }
     }
     
-    return { success: true, ticket }
+    return { success: true, ticket: ticket.toObject() }
   } catch (error) {
     console.error('Erro ao buscar ticket por ID:', error)
     return { success: false, error: 'Falha ao buscar o chamado' }
@@ -254,12 +234,7 @@ export async function updateTicketStatus(id: string, status: TicketStatus, inter
   try {
     await dbConnect()
     
-    if (!TicketModel) {
-      console.warn('Modelo Ticket não disponível, retornando erro')
-      return { success: false, error: 'Chamado não encontrado' }
-    }
-    
-    const ticket = await TicketModel.findById(id)
+    const ticket = await Ticket.findById(id)
     if (!ticket) {
       return { success: false, error: 'Chamado não encontrado' }
     }
@@ -269,7 +244,7 @@ export async function updateTicketStatus(id: string, status: TicketStatus, inter
       return { 
         success: true, 
         message: 'Status já estava atualizado',
-        ticket
+        ticket: ticket.toObject()
       }
     }
     
@@ -313,7 +288,7 @@ export async function updateTicketStatus(id: string, status: TicketStatus, inter
     return {
       success: true,
       message: 'Status do chamado atualizado com sucesso',
-      ticket
+      ticket: ticket.toObject()
     }
   } catch (error) {
     console.error('Erro ao atualizar status do ticket:', error)
@@ -328,12 +303,7 @@ export async function respondToTicket(id: string, response: string) {
   try {
     await dbConnect()
     
-    if (!TicketModel) {
-      console.warn('Modelo Ticket não disponível, retornando erro')
-      return { success: false, error: 'Chamado não encontrado' }
-    }
-    
-    const ticket = await TicketModel.findById(id)
+    const ticket = await Ticket.findById(id)
     if (!ticket) {
       return { success: false, error: 'Chamado não encontrado' }
     }
@@ -361,7 +331,7 @@ export async function respondToTicket(id: string, response: string) {
     return {
       success: true,
       message: 'Resposta adicionada com sucesso',
-      ticket
+      ticket: ticket.toObject()
     }
   } catch (error) {
     console.error('Erro ao responder ao ticket:', error)
