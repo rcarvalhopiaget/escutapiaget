@@ -33,6 +33,7 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
   const [redirectAttempts, setRedirectAttempts] = useState(0)
+  const [isReady, setIsReady] = useState(false)
 
   // Configuração do formulário com React Hook Form e validação Zod
   const { 
@@ -44,15 +45,54 @@ function LoginForm() {
     defaultValues: { email: '', password: '' }
   })
 
+  // Inicialização do componente
+  useEffect(() => {
+    // Limpar o estado de redirecionamento anterior
+    if (typeof window !== 'undefined') {
+      const redirectSessionId = localStorage.getItem('redirectSessionId');
+      const timestamp = Date.now();
+      
+      // Se não houver sessão ou se a sessão for muito antiga (mais de 5 minutos), criar nova
+      if (!redirectSessionId || (timestamp - parseInt(redirectSessionId)) > 300000) {
+        localStorage.setItem('redirectSessionId', timestamp.toString());
+        localStorage.setItem('redirectAttempts', '0');
+      }
+      
+      setIsReady(true);
+    }
+  }, []);
+
   // Efeito para lidar com o redirecionamento quando já autenticado
   useEffect(() => {
+    if (!isReady) return; // Aguardar até que a verificação inicial esteja concluída
+    
     console.log('[LoginForm] Status:', status);
     console.log('[LoginForm] Session:', session);
-    console.log('[LoginForm] Redirect attempts:', redirectAttempts);
+    
+    // Verificar se está na origem do redirecionamento (evitar redirecionamento circular)
+    const isFromRedirect = callbackUrl.includes('/admin/login') || callbackUrl === '/admin' || callbackUrl === '/admin/';
+    if (isFromRedirect) {
+      console.log('[LoginForm] Evitando redirecionamento circular:', callbackUrl);
+      const safeCallbackUrl = '/admin/dashboard';
+      console.log('[LoginForm] Usando URL segura:', safeCallbackUrl);
+      
+      if (status === 'authenticated' && session?.user?.role === 'admin') {
+        window.location.href = safeCallbackUrl;
+      }
+      return;
+    }
+    
+    // Obter contagem de tentativas de redirecionamento do localStorage
+    let attempts = 0;
+    if (typeof window !== 'undefined') {
+      const storedAttempts = localStorage.getItem('redirectAttempts');
+      attempts = storedAttempts ? parseInt(storedAttempts) : 0;
+      console.log('[LoginForm] Tentativas anteriores de redirecionamento:', attempts);
+    }
     
     if (status === 'authenticated' && session?.user?.role === 'admin' && !redirecting) {
       // Evitar tentativas infinitas de redirecionamento
-      if (redirectAttempts > 3) {
+      if (attempts >= 3) {
         console.log('[LoginForm] Muitas tentativas de redirecionamento, abortando');
         toast.error('Erro no redirecionamento', {
           description: 'Não foi possível redirecionar para o dashboard. Por favor, tente navegar manualmente.'
@@ -60,17 +100,23 @@ function LoginForm() {
         return;
       }
       
-      // Atualizar o contador de tentativas
-      setRedirectAttempts(prev => prev + 1);
+      // Incrementar e armazenar contagem de tentativas
+      attempts++;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('redirectAttempts', attempts.toString());
+      }
       
       console.log('[LoginForm] Usuário autenticado como admin. Redirecionando para:', callbackUrl);
       setRedirecting(true);
       
+      // Adicionar timestamp à URL para evitar o caching do navegador
+      const urlWithTimestamp = `${callbackUrl}${callbackUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+      
       // Usar window.location para forçar um redirecionamento completo
       // Isso evita problemas com o router do Next.js
-      window.location.href = callbackUrl;
+      window.location.href = urlWithTimestamp;
     }
-  }, [status, session, callbackUrl, router, redirecting, redirectAttempts]);
+  }, [status, session, callbackUrl, router, redirecting, isReady]);
 
   // Função de submit do formulário
   async function onSubmit(data: LoginFormValues) {
@@ -100,6 +146,11 @@ function LoginForm() {
         toast.success('Login bem-sucedido!', {
           description: 'Você será redirecionado em instantes.'
         })
+        
+        // Resetar contagem de tentativas após login bem-sucedido
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('redirectAttempts', '0');
+        }
         
         // Atualiza o estado da sessão
         router.refresh()
@@ -190,7 +241,13 @@ function LoginForm() {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => window.location.href = callbackUrl}
+              onClick={() => {
+                // Resetar contagem antes de tentar navegar manualmente
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('redirectAttempts', '0');
+                }
+                window.location.href = '/admin/dashboard';
+              }}
             >
               Ir para o Dashboard Manualmente
             </Button>
