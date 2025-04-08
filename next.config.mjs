@@ -63,8 +63,8 @@ const nextConfig = {
   skipTrailingSlashRedirect: true,
   // Configurações de ambiente
   env: {
-    // Permitir build sem variáveis de ambiente específicas
-    MONGODB_URI: process.env.MONGODB_URI || 'mongodb://placeholder:placeholder@placeholder:27017/placeholder',
+    // Não definir valores padrão para variáveis críticas
+    // A lógica de fallback já está implementada em mongodb.ts
   },
 };
 
