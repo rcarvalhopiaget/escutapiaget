@@ -64,6 +64,28 @@ declare module "next-auth/jwt" {
 }
 
 /**
+ * Detecta a URL base da aplicação para produção ou desenvolvimento
+ */
+function getBaseUrl() {
+  // Verificar se NEXTAUTH_URL está definido
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL;
+  }
+  
+  // Verificar ambiente de produção (Railway, Vercel, etc)
+  if (process.env.RAILWAY_STATIC_URL) {
+    return `https://${process.env.RAILWAY_STATIC_URL}`;
+  }
+  
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // Em desenvolvimento, usar localhost
+  return 'http://localhost:3000';
+}
+
+/**
  * Configuração do NextAuth para autenticação
  */
 export const authOptions: NextAuthOptions = {
@@ -136,7 +158,7 @@ export const authOptions: NextAuthOptions = {
   // Callbacks para personalizar o comportamento da autenticação
   callbacks: {
     // Callback executado no momento do login
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile, email, credentials }) {
       // Para autenticação com Google
       if (account?.provider === 'google') {
         try {
@@ -203,6 +225,48 @@ export const authOptions: NextAuthOptions = {
       }
       
       return session
+    },
+    
+    // Callback para personalização de URLs de redirecionamento
+    async redirect({ url, baseUrl }) {
+      // Log para debug da URL de redirecionamento
+      console.log('[NextAuth] Redirect callback:', { url, baseUrl });
+      
+      // Se a URL já for completa (com domínio), verificar se é do mesmo domínio
+      if (url.startsWith('http')) {
+        // Extrair o domínio da URL
+        const urlObj = new URL(url);
+        const baseUrlObj = new URL(baseUrl);
+        
+        // Se os domínios forem diferentes, redirecionar para o dashboard por segurança
+        if (urlObj.origin !== baseUrlObj.origin) {
+          console.log('[NextAuth] Domínios diferentes, redirecionando para o dashboard');
+          return `${baseUrl}/admin/dashboard`;
+        }
+        
+        // Se o redirecionamento for para a página de login, redirecionar para o dashboard
+        if (url.includes('/admin/login') || url === `${baseUrl}/admin`) {
+          console.log('[NextAuth] Evitando redirecionamento para login, indo para dashboard');
+          return `${baseUrl}/admin/dashboard`;
+        }
+        
+        // Caso contrário, manter a URL original
+        return url;
+      }
+      
+      // Se a URL for relativa e for para a página de login, redirecionar para o dashboard
+      if (url.startsWith('/admin/login') || url === '/admin') {
+        console.log('[NextAuth] URL relativa para login, redirecionando para dashboard');
+        return `${baseUrl}/admin/dashboard`;
+      }
+      
+      // Se for uma URL relativa, prefixar com a URL base
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      }
+      
+      // Se não começar com '/', é uma URL relativa que precisa ser prefixada com '/'
+      return `${baseUrl}/${url}`;
     }
   },
   
@@ -248,6 +312,18 @@ export const authOptions: NextAuthOptions = {
   
   // Modo de depuração
   debug: process.env.NODE_ENV === 'development',
+}
+
+// Definir a URL base para o NextAuth
+if (process.env.NEXTAUTH_URL) {
+  console.log(`[NextAuth] Usando NEXTAUTH_URL configurado: ${process.env.NEXTAUTH_URL}`);
+} else {
+  // Se não estiver definido, definir com base no ambiente
+  const baseUrl = getBaseUrl();
+  console.log(`[NextAuth] NEXTAUTH_URL não configurado, usando URL base detectada: ${baseUrl}`);
+  if (typeof process !== 'undefined' && process.env) {
+    process.env.NEXTAUTH_URL = baseUrl;
+  }
 }
 
 const handler = NextAuth(authOptions)
