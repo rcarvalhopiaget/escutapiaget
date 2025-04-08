@@ -5,11 +5,11 @@ export async function GET() {
   try {
     const result = await sendEmail({
       to: 'seu-email@exemplo.com', // Substitua pelo seu email para teste
-      subject: 'Teste de configuração SES - Escuta Piaget',
+      subject: 'Teste de configuração SES - 2Clicks',
       htmlBody: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #3b82f6;">Teste de Email</h1>
-          <p>Este é um email de teste do sistema Escuta Piaget.</p>
+          <p>Este é um email de teste do sistema 2Clicks.</p>
           <p>Configuração SES funcionando corretamente!</p>
           <hr>
           <p style="color: #666; font-size: 12px;">Data do teste: ${new Date().toLocaleString('pt-BR')}</p>

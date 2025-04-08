@@ -51,10 +51,9 @@ export default function GoogleAuthPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Clique no botão abaixo para permitir que o aplicativo Escuta Piaget
-              acesse seu Google Drive para salvar anexos de chamados.
-              Você só precisa fazer isso uma vez para obter o token necessário.
+            <p className="text-lg mb-6">
+              Clique no botão abaixo para permitir que o aplicativo 2Clicks
+              acesse informações de sua conta do Google.
             </p>
             
             {error && (

@@ -15,7 +15,7 @@ export async function sendEmail({
   subject,
   htmlBody,
   textBody,
-  from = process.env.EMAIL_FROM || 'colegiopiagetsbc@jpiaget.com.br'
+  from = process.env.EMAIL_FROM || 'contato@2clicks.com.br'
 }: {
   to: string | string[];
   subject: string;

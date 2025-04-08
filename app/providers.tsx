@@ -10,7 +10,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         attribute="class"
         defaultTheme="light"
         enableSystem={false}
-        storageKey="escutapiaget-theme"
+        storageKey="2clicks-theme"
       >
         {children}
       </ThemeProvider>

@@ -49,7 +49,7 @@ Sistema completo de chamados para a 2Clicks, destinado a pais de alunos e funcio
 
 1. **Clone o repositório**:
    ```bash
-   git clone https://github.com/escola-piaget/sistema-chamados.git
+   git clone https://github.com/2clicks/sistema-chamados.git
    cd sistema-chamados
    ```
 

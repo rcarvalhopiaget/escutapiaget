@@ -1,6 +1,6 @@
-# Arquivo robots.txt para EscutaPiaget
+# Arquivo robots.txt para 2Clicks
 User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://escutapiaget.up.railway.app/sitemap.xml 
+Sitemap: https://2clicks.up.railway.app/sitemap.xml 

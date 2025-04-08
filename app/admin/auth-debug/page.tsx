@@ -85,12 +85,12 @@ export default function AuthDebugPage() {
       } else if (data.success) {
         toast.success('Administrador criado com sucesso!')
         // Preencher os campos com as credenciais do admin
-        setEmail('admin@escolapiaget.com.br')
+        setEmail('admin@2clicks.com.br')
         setPassword('admin123')
       } else {
         toast.info(data.message)
         // Preencher os campos com as credenciais do admin existente
-        setEmail('admin@escolapiaget.com.br')
+        setEmail('admin@2clicks.com.br')
         setPassword('admin123')
       }
     } catch (error) {
@@ -159,7 +159,7 @@ export default function AuthDebugPage() {
                   Isso criará um usuário administrador com as seguintes credenciais:
                 </p>
                 <ul className="text-sm text-gray-500 list-disc list-inside mb-4">
-                  <li>Email: admin@escolapiaget.com.br</li>
+                  <li>Email: admin@2clicks.com.br</li>
                   <li>Senha: admin123</li>
                   <li>Função: admin</li>
                   <li>Departamento: ti</li>

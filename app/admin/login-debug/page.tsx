@@ -12,7 +12,10 @@ import { Loader2 } from 'lucide-react'
 export default function LoginDebugPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
-  const [email, setEmail] = useState('admin@escolapiaget.com.br')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [email, setEmail] = useState('admin@2clicks.com.br')
   const [password, setPassword] = useState('admin123')
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<any>(null)

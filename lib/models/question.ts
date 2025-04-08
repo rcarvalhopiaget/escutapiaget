@@ -40,7 +40,6 @@ export interface IQuestion extends Document {
 
 // Garantir que temos todos os valores do enum atualizados para validação
 const questionTypeValues = Object.values(QuestionType);
-console.log("Tipos de pergunta disponíveis:", questionTypeValues);
 
 const questionSchema: Schema = new Schema<IQuestion>(
   {

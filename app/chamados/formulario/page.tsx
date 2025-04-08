@@ -174,7 +174,7 @@ function FormularioContent() {
         <div className="mb-8 p-6 bg-amber-50 border border-amber-200 rounded-lg text-neutral-800">
           <h2 className="text-xl font-semibold mb-3 text-amber-800">Denúncia de Bullying</h2>
           <p className="mb-4 text-sm">Todas as denúncias de bullying são tratadas com prioridade e confidencialidade por nossa equipe. Sua denúncia será analisada pela coordenação pedagógica e respondida em até 48 horas.</p>
-          <p className="mb-4 text-sm">Para fazer uma denúncia, entre em contato diretamente com nossa coordenadora através do e-mail: <a href="mailto:antibullying@escolapiaget.com.br" className="text-blue-600 hover:underline font-medium">antibullying@escolapiaget.com.br</a></p>
+          <p className="mb-4 text-sm">Para fazer uma denúncia, entre em contato diretamente com nossa coordenadora através do e-mail: <a href="mailto:antibullying@2clicks.com.br" className="text-blue-600 hover:underline font-medium">antibullying@2clicks.com.br</a></p>
 
           <h3 className="text-lg font-semibold mt-6 mb-2 text-amber-700">O que é Bullying?</h3>
           <p className="mb-4 text-sm">Bullying é caracterizado por comportamentos agressivos intencionais e repetitivos, que ocorrem sem motivação evidente, praticados por um indivíduo ou grupo contra uma ou mais pessoas, causando dor e angústia.</p>
@@ -216,7 +216,7 @@ function FormularioContent() {
           <h3 className="text-lg font-semibold mt-6 mb-2 text-blue-700">Como Processamos seu Pedido</h3>
           <p className="mb-4 text-sm">Após o recebimento da sua solicitação, nossa equipe de proteção de dados irá analisá-la e responder em até 10 dias. Para solicitações mais complexas, este prazo pode ser estendido, mas você será informado.</p>
           
-          <p className="text-sm">Para dúvidas específicas sobre proteção de dados, entre em contato com nosso Encarregado de Dados (DPO) através do e-mail: <a href="mailto:colegiopiagetsbc@jpiaget.com.br" className="text-blue-600 hover:underline font-medium">colegiopiagetsbc@jpiaget.com.br</a></p>
+          <p className="text-sm">Para dúvidas específicas sobre proteção de dados, entre em contato com nosso Encarregado de Dados (DPO) através do e-mail: <a href="mailto:dpo@2clicks.com.br" className="text-blue-600 hover:underline font-medium">dpo@2clicks.com.br</a></p>
         </div>
       )}
 

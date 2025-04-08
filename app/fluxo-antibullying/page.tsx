@@ -106,8 +106,8 @@ export default function AntiBullyingFormPage() {
             </p>
             <p className="text-red-700">
               Para fazer uma denúncia, entre em contato diretamente com nossa coordenadora através do e-mail: 
-              <a href="mailto:antibullying@escolapiaget.com.br" className="font-medium underline ml-1">
-                antibullying@escolapiaget.com.br
+              <a href="mailto:antibullying@2clicks.com.br" className="font-medium underline ml-1">
+                antibullying@2clicks.com.br
               </a>
             </p>
           </div>

@@ -5,12 +5,12 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
       <div className="z-10 max-w-5xl w-full items-center justify-center font-mono text-sm">
-        <h1 className="text-4xl font-bold mb-8 text-center">Colégio Piaget</h1>
+        <h1 className="text-4xl font-bold mb-8 text-center">2Clicks</h1>
         
         <div className="bg-white rounded-lg shadow-xl p-8 mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Bem-vindo à Escuta Piaget</h2>
+          <h2 className="text-2xl font-semibold mb-4">Bem-vindo à Escuta 2Clicks</h2>
           <p className="mb-6">
-            Este é o portal principal do Colégio Piaget, onde alunos, pais e funcionários 
+            Este é o portal principal da 2Clicks, onde clientes, parceiros e funcionários 
             podem acessar informações e serviços importantes.
           </p>
 
@@ -37,7 +37,7 @@ export default function Home() {
         
         <div className="text-center text-sm text-neutral-500">
           <p>
-            Colégio Piaget &copy; {new Date().getFullYear()} - Todos os direitos reservados
+            2Clicks &copy; {new Date().getFullYear()} - Todos os direitos reservados
           </p>
         </div>
       </div>

@@ -12,7 +12,8 @@ export async function GET(req: NextRequest) {
   }
   
   try {
-    const email = 'admin@escolapiaget.com.br'
+    // Simular autenticação
+    const email = 'admin@2clicks.com.br'
     const password = 'admin123'
     
     console.log(`[Login Test] Tentando fazer login com ${email}`)

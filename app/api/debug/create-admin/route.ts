@@ -1,47 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/user';
+import bcrypt from 'bcrypt';
 
 export async function POST(request: NextRequest) {
   try {
     // Conexão com o banco de dados
     await dbConnect();
     
-    // Verificar se o usuário admin já existe
-    const existingAdmin = await User.findOne({ email: 'admin@escolapiaget.com.br' });
+    // Verificar se o usuário já existe
+    const existingAdmin = await User.findOne({ email: 'admin@2clicks.com.br' });
     
     if (existingAdmin) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Usuário admin já existe',
-          user: {
-            id: existingAdmin._id,
-            email: existingAdmin.email,
-            role: existingAdmin.role,
-            department: existingAdmin.department,
-          }
-        },
-        { status: 200 }
-      );
+      return NextResponse.json({ 
+        message: 'Usuário administrador já existe',
+        userId: existingAdmin._id
+      });
     }
 
-    // Criar usuário administrador padrão
-    const adminUser = await User.create({
+    // Criar hash da senha
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash('admin123', salt);
+
+    // Criar novo usuário administrador
+    const newAdmin = new User({
       name: 'Administrador',
-      email: 'admin@escolapiaget.com.br',
-      password: 'admin123', // Esta senha será criptografada pelo middleware do modelo
+      email: 'admin@2clicks.com.br',
+      hashedPassword,
       role: 'admin',
-      department: 'ti',
-      permissions: {
-        viewTickets: true,
-        respondTickets: true,
-        editTickets: true,
-        deleteTickets: true,
-        manageUsers: true,
-        viewDashboard: true,
-        viewAllDepartments: true
-      }
+      permissions: ['admin', 'viewDashboard', 'answerTickets', 'manageUsers', 'manageQuestions', 'manageTags']
     });
 
     // Retornar os detalhes do usuário criado (sem a senha)
@@ -50,12 +37,12 @@ export async function POST(request: NextRequest) {
         success: true, 
         message: 'Usuário admin criado com sucesso',
         user: {
-          id: adminUser._id,
-          name: adminUser.name,
-          email: adminUser.email,
-          role: adminUser.role,
-          department: adminUser.department,
-          permissions: adminUser.permissions
+          id: newAdmin._id,
+          name: newAdmin.name,
+          email: newAdmin.email,
+          role: newAdmin.role,
+          department: newAdmin.department,
+          permissions: newAdmin.permissions
         }
       },
       { status: 201 }

@@ -33,7 +33,7 @@ async function sendTicketNotification(ticket: Ticket) {
           </div>
           
           <p>Você receberá uma resposta em breve.</p>
-          <p>Atenciosamente,<br>Colégio Piaget</p>
+          <p>Atenciosamente,<br>2Clicks</p>
         </div>
       `,
       textBody: `
@@ -50,13 +50,13 @@ async function sendTicketNotification(ticket: Ticket) {
         Você receberá uma resposta em breve.
         
         Atenciosamente,
-        Colégio Piaget
+        2Clicks
       `
     });
     
     // Email para os administradores
     await sendEmail({
-      to: process.env.ADMIN_EMAIL || 'colegiopiagetsbc@jpiaget.com.br',
+      to: process.env.ADMIN_EMAIL || 'contato@2clicks.com.br',
       subject: `Novo chamado #${ticket.protocol} - ${ticket.type}`,
       htmlBody: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
