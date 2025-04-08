@@ -26,18 +26,18 @@ type LoginFormValues = z.infer<typeof loginSchema>
 // Componente que usa o useSearchParams
 function LoginForm() {
   const router = useRouter()
-  const { status } = useSession() // Não precisamos mais da session aqui
+  const { data: session, status } = useSession()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('from') || searchParams.get('callbackUrl') || '/admin/dashboard'
   const [isLoading, setIsLoading] = useState(false)
 
-  // REMOVER o useEffect que redirecionava automaticamente
-  // useEffect(() => {
-  //   if (status === 'authenticated') {
-  //     console.log('Usuário autenticado, redirecionando (via useEffect):', callbackUrl)
-  //     router.push(callbackUrl)
-  //   }
-  // }, [status, router, callbackUrl])
+  // RESTAURAR o useEffect para redirecionar quando autenticado
+  useEffect(() => {
+    if (status === 'authenticated') {
+      console.log('Usuário autenticado, redirecionando (via useEffect):', callbackUrl)
+      router.push(callbackUrl)
+    }
+  }, [status, router, callbackUrl])
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -53,9 +53,9 @@ function LoginForm() {
     try {
       console.log(`Tentando login para redirecionar para: ${callbackUrl}`)
       
-      // Modificar signIn para usar redirect: true (padrão) e passar callbackUrl
+      // Modificar signIn para usar redirect: false para lidar com o redirecionamento no useEffect
       const result = await signIn('credentials', {
-        // redirect: true é o padrão, não precisamos especificar
+        redirect: false, // Use false para lidar com redirecionamento manualmente
         email: data.email,
         password: data.password,
         callbackUrl: callbackUrl 
@@ -67,12 +67,10 @@ function LoginForm() {
         toast.error('Erro ao fazer login', {
           description: 'Credenciais inválidas. Verifique seu e-mail e senha.'
         })
-      } else if (result?.ok && !result.error) {
-         // Se signIn retornar ok e sem erro, mas não redirecionou (raro com redirect padrão)
-         // Apenas mostramos uma mensagem, pois o redirect deveria ter ocorrido.
-         toast.success('Login iniciado...'); 
+      } else if (result?.ok) {
+         // Se signIn retornar ok, nosso useEffect vai detectar a sessão e redirecionar
+         toast.success('Login bem-sucedido! Redirecionando...'); 
       }
-      // Se o redirect ocorreu, esta parte do código não será executada
       
     } catch (error) {
       console.error('Erro inesperado no onSubmit:', error)
@@ -80,8 +78,6 @@ function LoginForm() {
         description: 'Ocorreu um erro inesperado. Tente novamente mais tarde.'
       })
     } finally {
-      // Manter o isLoading como false pode ser problemático se o redirect ocorrer,
-      // pois o componente pode desmontar. Mas é bom ter para o caso de erro.
       setIsLoading(false)
     }
   }

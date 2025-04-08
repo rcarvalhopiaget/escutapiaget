@@ -50,18 +50,26 @@ export default function DashboardPage() {
   // Efeito para redirecionar se não estiver autenticado OU não tiver permissão
   useEffect(() => {
     // Esperar o status ser determinado
-    if (status === 'loading') return;
+    if (status === 'loading') {
+      console.log('[DashboardPage] Carregando status de autenticação...')
+      return;
+    }
     
     // Se não autenticado, redirecionar para login
     if (status === 'unauthenticated') {
       console.log('[DashboardPage] Usuário não autenticado. Redirecionando para login.')
-      router.push('/admin/login')
+      router.push('/admin/login?from=/admin/dashboard')
       return;
     }
     
     // Se autenticado, verificar permissões
     if (status === 'authenticated') {
+      console.log('[DashboardPage] Usuário autenticado:', session?.user?.email)
+      console.log('[DashboardPage] Role do usuário:', session?.user?.role)
+      console.log('[DashboardPage] Permissões:', session?.user?.permissions)
+      
       const canViewDashboard = session?.user?.permissions?.viewDashboard || session?.user?.role === 'admin';
+      
       if (!canViewDashboard) {
         console.log('[DashboardPage] Acesso negado. Usuário não tem permissão para ver o dashboard.')
         toast.error('Acesso Negado', { description: 'Você não tem permissão para acessar esta página.' })
@@ -72,7 +80,7 @@ export default function DashboardPage() {
         fetchTickets();
       }
     }
-  }, [status, session, router]) // Adicionar session às dependências
+  }, [status, session, router])
   
   // Função para buscar os tickets (agora chamada pelo useEffect acima)
   const fetchTickets = async () => {
