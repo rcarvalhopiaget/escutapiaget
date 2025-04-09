@@ -25,6 +25,14 @@ export async function createTicket(data: TicketFormData) {
       isStudent: data.isStudent,
       message: data.message,
       status: TicketStatus.ABERTO,
+      statusHistory: [
+        {
+          from: '',
+          to: TicketStatus.ABERTO,
+          date: now,
+          comments: 'Chamado criado'
+        }
+      ]
     })
     
     await ticket.save()
@@ -197,6 +205,8 @@ export async function getTicketByProtocol(protocol: string): Promise<{
       email: (ticketData as any).email || '',
       message: (ticketData as any).message,
       response: (ticketData as any).response || '',
+      internalComments: (ticketData as any).internalComments || '',
+      statusHistory: (ticketData as any).statusHistory || [],
       createdAt: (ticketData as any).createdAt.toISOString(),
       updatedAt: (ticketData as any).updatedAt.toISOString(),
     } as TicketInterface

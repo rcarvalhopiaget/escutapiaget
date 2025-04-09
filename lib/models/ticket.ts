@@ -50,6 +50,18 @@ const ticketSchema = new Schema({
     required: false,
     trim: true,
   },
+  statusHistory: [
+    {
+      from: { type: String, required: true },
+      to: { type: String, required: true },
+      date: { type: Date, default: Date.now },
+      comments: { type: String, required: false }
+    }
+  ],
+  internalComments: {
+    type: String,
+    required: false
+  },
   attachments: [
     {
       driveId: { type: String, required: true },

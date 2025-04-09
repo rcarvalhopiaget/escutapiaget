@@ -52,7 +52,7 @@ export interface Ticket {
   studentGrade?: string;
   isStudent?: boolean;
   internalComments?: string;
-  statusHistory?: StatusHistoryItem[];
+  statusHistory: StatusHistoryItem[];
 }
 
 export interface TicketFormData {
