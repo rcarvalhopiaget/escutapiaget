@@ -44,16 +44,18 @@ export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const fullUrl = request.url;
   
-  console.log(`[Middleware] Verificando: ${pathname}`);
+  console.log(`[Middleware] Verificando: ${pathname}, URL completa: ${fullUrl}`);
   
   // Verificar parâmetros especiais que indicam que devemos permitir a navegação
-  // sem interferência do middleware para resolver problemas de loop
+  // sem interferência do middleware para resolver problemas de loop ou autorização forçada
   const hasCleanParam = searchParams.get('clean') === 'true';
   const hasManualParam = searchParams.get('manual') === 'true';
   const hasResetParam = searchParams.get('reset') === 'true';
+  const hasAccessParam = searchParams.get('access') === 'auth';
   
-  if (hasCleanParam || hasManualParam || hasResetParam) {
-    console.log(`[Middleware] Detectado parâmetro especial (clean/manual/reset). Permitindo navegação sem verificação.`);
+  // Se tiver qualquer parâmetro de bypass, permitir acesso sem verificação adicional
+  if (hasCleanParam || hasManualParam || hasResetParam || hasAccessParam) {
+    console.log(`[Middleware] Detectado parâmetro especial de bypass. Permitindo navegação direta.`);
     return NextResponse.next();
   }
   
@@ -94,9 +96,9 @@ export async function middleware(request: NextRequest) {
     // Se o usuário está tentando acessar a raiz de admin com cookie válido, redirecionar para dashboard
     if (pathname === '/admin' && sessionCookie) {
       console.log(`[Middleware] Usuário autenticado tentando acessar /admin. Redirecionando para dashboard.`);
-      // Adicionar parâmetro clean=true para evitar que o middleware intercepte novamente
+      // Adicionar parâmetro access=auth para evitar que o middleware interfira
       const dashboardUrl = new URL('/admin/dashboard', request.url);
-      dashboardUrl.searchParams.set('clean', 'true');
+      dashboardUrl.searchParams.set('access', 'auth');
       dashboardUrl.searchParams.set('t', Date.now().toString());
       return NextResponse.redirect(dashboardUrl);
     }

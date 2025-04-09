@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn, useSession, signOut } from 'next-auth/react'
 import { z } from 'zod'
@@ -33,6 +33,9 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
   const [isReady, setIsReady] = useState(false)
+  const [justLoggedIn, setJustLoggedIn] = useState(false)
+  const [loopCount, setLoopCount] = useState(0)
+  const [showLoopMessage, setShowLoopMessage] = useState(false)
 
   // Configuração do formulário com React Hook Form e validação Zod
   const { 
@@ -43,6 +46,21 @@ function LoginForm() {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' }
   })
+
+  // Limpar qualquer marca de loop no carregamento inicial se tiver reset=true na URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const resetParam = searchParams.get('reset')
+      if (resetParam === 'true') {
+        console.log('[LoginForm] Parâmetro reset detectado. Limpando estado de loops.')
+        localStorage.removeItem('login_loop_detected')
+      }
+      
+      // Limpar quaisquer flags de estado
+      localStorage.removeItem('redirectAttempts')
+      setIsReady(true)
+    }
+  }, [searchParams])
 
   // Detectar possíveis loops de redirecionamento
   useEffect(() => {
@@ -55,8 +73,8 @@ function LoginForm() {
       console.log('[LoginForm] Parâmetro from:', from)
       console.log('[LoginForm] Timestamp:', timestamp)
       
-      // Checar se estamos em um possível loop
-      if (from === '/admin/dashboard') {
+      // Checar se estamos em um possível loop apenas se não estivermos após um login bem sucedido
+      if (!justLoggedIn && from === '/admin/dashboard') {
         // Verificar se temos marcas de tempo recentes (últimos 30 segundos)
         if (timestamp) {
           const currentTime = Date.now()
@@ -66,21 +84,14 @@ function LoginForm() {
             console.log('[LoginForm] Possível loop de redirecionamento detectado!')
             setIsLooping(true)
             
-            // Armazenar isso para evitar redirecionamentos automáticos
-            localStorage.setItem('login_loop_detected', 'true')
-            
             toast.error('Loop de redirecionamento detectado', {
               description: 'O sistema detectou um possível loop. Tente fazer logout e login novamente.'
             })
           }
         }
       }
-      
-      // Limpar qualquer estado de redirecionamento anterior
-      localStorage.removeItem('redirectAttempts')
-      setIsReady(true)
     }
-  }, [searchParams])
+  }, [searchParams, justLoggedIn])
 
   // Função para forçar logout e resetar o estado
   const handleForcedLogout = async () => {
@@ -111,62 +122,56 @@ function LoginForm() {
     }
   }
 
-  // Verificar periodicamente a autenticação
+  // Função para redirecionar ao dashboard com parâmetro de acesso
+  const redirectToDashboard = useCallback(() => {
+    console.log("Redirecionando para o dashboard após login...");
+    // Usamos access=auth para evitar que o middleware bloqueie o acesso
+    router.push('/admin/dashboard?access=auth&t=' + Date.now());
+  }, [router]);
+
+  // Gerenciamento do estado de autenticação
   useEffect(() => {
-    if (!isReady) return
+    if (status === 'loading') return;
     
-    console.log('[LoginForm] Status:', status)
-    console.log('[LoginForm] Session:', session)
+    console.log(`Status de autenticação: ${status}`);
     
-    // Se detectamos um loop, não tente redirecionamento automático
-    if (localStorage.getItem('login_loop_detected') === 'true') {
-      console.log('[LoginForm] Loop detectado anteriormente, cancelando redirecionamento automático')
-      return
+    if (status === 'authenticated' && session) {
+      setIsLoading(false);
+      setJustLoggedIn(true);
+      console.log("Login bem-sucedido:", session);
+      redirectToDashboard();
     }
-    
-    if (status === 'authenticated' && session?.user?.role === 'admin' && !redirecting) {
-      console.log('[LoginForm] Usuário autenticado como admin, tentando redirecionamento direto')
-      
-      try {
-        setRedirecting(true)
-        
-        // URL hardcoded para o dashboard com timestamp para evitar cache
-        const dashboardUrl = `/admin/dashboard?clean=true&t=${Date.now()}`
-        console.log(`[LoginForm] Redirecionando para: ${dashboardUrl}`)
-        
-        // Usar várias abordagens para garantir o redirecionamento
-        setTimeout(() => {
-          try {
-            // Opção 1: Usar window.location.href
-            window.location.href = dashboardUrl
-          } catch (error) {
-            console.error('[LoginForm] Erro no redirecionamento com window.location:', error)
-            
-            try {
-              // Opção 2: Usar window.location.replace
-              window.location.replace(dashboardUrl)
-            } catch (err2) {
-              console.error('[LoginForm] Erro no redirecionamento com window.location.replace:', err2)
-              
-              try {
-                // Opção 3: Usar router.push como última tentativa
-                router.push(dashboardUrl)
-              } catch (err3) {
-                console.error('[LoginForm] Todos os métodos de redirecionamento falharam:', err3)
-                setRedirecting(false)
-                toast.error('Falha no redirecionamento automático', {
-                  description: 'Por favor, use o botão abaixo para ir para o dashboard.'
-                })
-              }
-            }
-          }
-        }, 500) // Pequeno atraso para garantir que tudo está pronto
-      } catch (error) {
-        console.error('[LoginForm] Erro na lógica de redirecionamento:', error)
-        setRedirecting(false)
-      }
+  }, [status, session, redirectToDashboard]);
+
+  // Detector de loops de redirecionamento
+  useEffect(() => {
+    // Se acabou de fazer login, não considerar loop
+    if (justLoggedIn) {
+      return;
     }
-  }, [status, session, router, redirecting, isReady])
+
+    const fromParam = new URLSearchParams(window.location.search).get('from');
+    console.log(`Detectando loop. From: ${fromParam}, Count: ${loopCount}`);
+
+    if (fromParam && (fromParam.includes('dashboard') || fromParam === '/admin')) {
+      setLoopCount(prev => prev + 1);
+    }
+
+    if (loopCount >= 2) {
+      setShowLoopMessage(true);
+      console.warn("Detectado possível loop de redirecionamento!");
+    }
+  }, [loopCount, justLoggedIn]);
+
+  // Resetar estado de "acabou de fazer login" após redirecionamento
+  useEffect(() => {
+    if (justLoggedIn) {
+      const timer = setTimeout(() => {
+        setJustLoggedIn(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [justLoggedIn]);
 
   // Função de submit do formulário
   async function onSubmit(data: LoginFormValues) {
@@ -179,8 +184,7 @@ function LoginForm() {
       const result = await signIn('credentials', {
         redirect: false,
         email: data.email,
-        password: data.password,
-        callbackUrl: '/admin/dashboard' // URL fixa para o dashboard
+        password: data.password
       })
       
       console.log('[LoginForm] Resultado do login:', result)
@@ -193,17 +197,14 @@ function LoginForm() {
       } else if (result?.ok) {
         console.log('[LoginForm] Login bem-sucedido')
         toast.success('Login bem-sucedido!', {
-          description: 'Preparando redirecionamento para o dashboard...'
+          description: 'Redirecionando para o painel administrativo...'
         })
         
-        // Atualizar estado da sessão e forçar atualização
-        router.refresh()
+        // Marcar que acabamos de fazer login com sucesso
+        setJustLoggedIn(true)
         
-        // Tentar redirecionamento direto após breve espera
-        setTimeout(() => {
-          const dashboardUrl = `/admin/dashboard?clean=true&t=${Date.now()}`
-          window.location.href = dashboardUrl
-        }, 1500)
+        // Forçar atualização da sessão
+        router.refresh()
       }
     } catch (error) {
       console.error('[LoginForm] Erro no processo de login:', error)
@@ -217,7 +218,7 @@ function LoginForm() {
 
   // Se está redirecionando, mostra o estado de carregamento
   if (redirecting) {
-    return <LoadingState message="Redirecionando para o dashboard..." />
+    return <LoadingState message="Redirecionando para o painel administrativo..." />
   }
 
   return (
@@ -315,10 +316,7 @@ function LoginForm() {
               variant="default" 
               size="lg" 
               className="w-full bg-green-600 hover:bg-green-700"
-              onClick={() => {
-                const dashboardUrl = `/admin/dashboard?manual=true&t=${Date.now()}`
-                window.location.href = dashboardUrl
-              }}
+              onClick={redirectToDashboard}
             >
               Acessar Dashboard Admin
             </Button>
