@@ -124,9 +124,9 @@ function LoginForm() {
 
   // Função para redirecionar ao dashboard com parâmetro de acesso
   const redirectToDashboard = useCallback(() => {
-    console.log("Redirecionando para o dashboard após login...");
+    console.log("Redirecionando para o painel administrativo após login...");
     // Usamos access=auth para evitar que o middleware bloqueie o acesso
-    router.push('/admin/dashboard?access=auth&t=' + Date.now());
+    router.push('/admin?access=auth&t=' + Date.now());
   }, [router]);
 
   // Gerenciamento do estado de autenticação
@@ -310,7 +310,7 @@ function LoginForm() {
         {status === 'authenticated' && session?.user?.role === 'admin' && (
           <div className="mt-6 border-t pt-4">
             <p className="text-sm font-medium text-gray-700 mb-3">
-              Navegação Manual para o Dashboard:
+              Navegação Manual para o Painel Administrativo:
             </p>
             <Button 
               variant="default" 
@@ -318,7 +318,7 @@ function LoginForm() {
               className="w-full bg-green-600 hover:bg-green-700"
               onClick={redirectToDashboard}
             >
-              Acessar Dashboard Admin
+              Acessar Painel Administrativo
             </Button>
           </div>
         )}

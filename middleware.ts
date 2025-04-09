@@ -94,6 +94,7 @@ export async function middleware(request: NextRequest) {
     }
     
     // Se o usuário está tentando acessar a raiz de admin com cookie válido, redirecionar para dashboard
+    /* Comentado para permitir acesso direto à página principal do admin
     if (pathname === '/admin' && sessionCookie) {
       console.log(`[Middleware] Usuário autenticado tentando acessar /admin. Redirecionando para dashboard.`);
       // Adicionar parâmetro access=auth para evitar que o middleware interfira
@@ -102,6 +103,7 @@ export async function middleware(request: NextRequest) {
       dashboardUrl.searchParams.set('t', Date.now().toString());
       return NextResponse.redirect(dashboardUrl);
     }
+    */
     
     // Permite acesso se o cookie existir
     console.log(`[Middleware] Cookie de sessão encontrado. Permitindo acesso a: ${pathname}`);
