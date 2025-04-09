@@ -8,28 +8,30 @@ export async function POST(request: NextRequest) {
     // Conexão com o banco de dados
     await dbConnect();
     
-    // Verificar se o usuário já existe
-    const existingAdmin = await User.findOne({ email: 'admin@2clicks.com.br' });
+    // Verificar se já existe um usuário com o mesmo email
+    const existingAdmin = await User.findOne({ email: 'admin@piaget.com.br' });
     
     if (existingAdmin) {
-      return NextResponse.json({ 
-        message: 'Usuário administrador já existe',
-        userId: existingAdmin._id
-      });
+      console.log('[DEBUG] Administrador já existe');
+      return NextResponse.json(
+        { success: true, message: 'Administrador já existe', id: existingAdmin._id }, 
+        { status: 200 }
+      );
     }
 
-    // Criar hash da senha
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('admin123', salt);
-
-    // Criar novo usuário administrador
+    // Criar nova conta de administrador
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    
     const newAdmin = new User({
       name: 'Administrador',
-      email: 'admin@2clicks.com.br',
-      hashedPassword,
-      role: 'admin',
-      permissions: ['admin', 'viewDashboard', 'answerTickets', 'manageUsers', 'manageQuestions', 'manageTags']
+      email: 'admin@piaget.com.br',
+      password: hashedPassword,
+      role: 'admin'
     });
+    
+    // Salvar o usuário no banco de dados
+    await newAdmin.save();
+    console.log('[DEBUG] Administrador criado com sucesso');
 
     // Retornar os detalhes do usuário criado (sem a senha)
     return NextResponse.json(
@@ -41,8 +43,8 @@ export async function POST(request: NextRequest) {
           name: newAdmin.name,
           email: newAdmin.email,
           role: newAdmin.role,
-          department: newAdmin.department,
-          permissions: newAdmin.permissions
+          department: newAdmin.department || 'N/A',
+          permissions: newAdmin.permissions || []
         }
       },
       { status: 201 }

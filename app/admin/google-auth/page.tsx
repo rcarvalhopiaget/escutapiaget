@@ -51,10 +51,13 @@ export default function GoogleAuthPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <p className="text-lg mb-6">
-              Clique no botão abaixo para permitir que o aplicativo 2Clicks
-              acesse informações de sua conta do Google.
-            </p>
+            <h1 className="text-2xl font-bold mb-4">Autenticação Google</h1>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-blue-800">
+              <p>
+                Clique no botão abaixo para permitir que o aplicativo Piaget
+                acesse seu email e informações de perfil.
+              </p>
+            </div>
             
             {error && (
               <Alert variant="destructive">

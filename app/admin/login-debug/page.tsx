@@ -15,7 +15,7 @@ export default function LoginDebugPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [email, setEmail] = useState('admin@2clicks.com.br')
+  const [email, setEmail] = useState('admin@piaget.com.br')
   const [password, setPassword] = useState('admin123')
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<any>(null)

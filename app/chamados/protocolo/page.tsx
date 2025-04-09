@@ -9,6 +9,8 @@ import Link from 'next/link'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import { Ticket, TicketStatus, TicketType } from '@/app/types/ticket'
+import { TicketTimeline } from '@/app/components/ui/ticket-timeline'
+import { Separator } from '@/components/ui/separator'
 
 // Mapeamento dos status para texto em português
 const statusText: Record<TicketStatus, string> = {
@@ -24,7 +26,8 @@ const typeText: Record<TicketType, string> = {
   [TicketType.RECLAMACAO]: 'Reclamação',
   [TicketType.DENUNCIA]: 'Denúncia',
   [TicketType.SUGESTAO]: 'Sugestão',
-  [TicketType.DUVIDA]: 'Dúvida'
+  [TicketType.DUVIDA]: 'Dúvida',
+  [TicketType.PRIVACIDADE]: 'Privacidade de Dados'
 }
 
 // Componente interno que usa useSearchParams
@@ -167,7 +170,7 @@ function ProtocoloPageContent() {
               ${ticket.status === TicketStatus.ENCAMINHADO ? 'bg-purple-100 text-purple-700' : ''}
               ${ticket.status === TicketStatus.RESOLVIDO ? 'bg-slate-100 text-slate-700' : ''}
             `}>
-              {statusText[ticket.status]}
+              {statusText[ticket.status as TicketStatus] || 'Desconhecido'}
             </div>
           </div>
         </CardHeader>
@@ -176,7 +179,7 @@ function ProtocoloPageContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-3 bg-gray-50 rounded">
               <h3 className="text-sm font-semibold text-gray-500">Tipo</h3>
-              <p className="font-medium">{typeText[ticket.type]}</p>
+              <p className="font-medium">{typeText[ticket.type as TicketType] || 'Outro'}</p>
             </div>
             
             <div className="p-3 bg-gray-50 rounded">
@@ -199,8 +202,22 @@ function ProtocoloPageContent() {
             )}
           </div>
           
+          {/* Adicionar a timeline do chamado */}
+          <div className="mt-6 pt-6 border-t">
+            <TicketTimeline 
+              currentStatus={ticket.status}
+              statusHistory={ticket.statusHistory}
+              createdAt={ticket.createdAt}
+              resolvedAt={ticket.status === 'resolvido' && ticket.updatedAt 
+                ? (typeof ticket.updatedAt === 'string' ? ticket.updatedAt : ticket.updatedAt.toISOString())
+                : undefined}
+            />
+          </div>
+          
+          <Separator className="my-4" />
+          
           {ticket.message && (
-            <div className="mt-4 pt-4 border-t">
+            <div className="mt-4">
               <h3 className="text-base font-semibold text-gray-700 mb-3">Detalhes do Chamado</h3>
               
               {/* Verificar se a mensagem parece ser um formulário com respostas */}
@@ -242,8 +259,16 @@ function ProtocoloPageContent() {
                       // Formatar data se parecer ser uma data
                       let valorFormatado = valorLimpo;
                       if (valorLimpo.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                        const data = new Date(valorLimpo);
-                        valorFormatado = data.toLocaleDateString('pt-BR');
+                        try {
+                          const data = new Date(valorLimpo);
+                          // Verificar se a data é válida antes de formatar
+                          if (!isNaN(data.getTime())) {
+                            valorFormatado = data.toLocaleDateString('pt-BR');
+                          }
+                        } catch (error) {
+                          console.error('Erro ao formatar data:', error);
+                          // Manter o valor original em caso de erro
+                        }
                       }
                       
                       return (
@@ -269,7 +294,11 @@ function ProtocoloPageContent() {
               <div className="bg-green-50 border border-green-100 p-4 rounded-md">
                 <p className="whitespace-pre-wrap text-gray-700">{ticket.response}</p>
                 <p className="mt-3 text-sm text-gray-500 italic">
-                  Respondido em: {new Date(ticket.updatedAt).toLocaleDateString('pt-BR', {
+                  Respondido em: {ticket.updatedAt && (
+                    typeof ticket.updatedAt === 'string' 
+                      ? new Date(ticket.updatedAt)
+                      : ticket.updatedAt
+                  ).toLocaleDateString('pt-BR', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',

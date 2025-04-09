@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import { PanelLeftOpen } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Sistema de Chamados - 2Clicks',
-  description: 'Plataforma para o registro de chamados, dúvidas, reclamações e denúncias',
+  title: 'Sistema de Chamados - Piaget',
+  description: 'Envie reclamações, sugestões, dúvidas ou solicite informações sobre privacidade de dados',
 }
 
 export default function TicketsPage() {

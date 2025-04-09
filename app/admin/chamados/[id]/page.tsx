@@ -32,6 +32,7 @@ import {
 import { Toaster } from '@/components/ui/sonner'
 
 import { Ticket } from '@/app/types/ticket'
+import { TicketTimeline } from '@/app/components/ui/ticket-timeline'
 
 // Mapeia tipos de chamado para nomes mais amigáveis e cores
 const typeMap: Record<string, { label: string, color: string }> = {
@@ -408,91 +409,65 @@ export default function TicketDetailsPage() {
         <div>
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Gerenciar Chamado</CardTitle>
+              <CardTitle className="text-lg">Gerenciamento do Chamado</CardTitle>
               <CardDescription>
-                Atualize o status e gerencie o chamado
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Status atual</label>
-                <Select
-                  value={currentStatus}
-                  onValueChange={setCurrentStatus}
-                  disabled={statusLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {currentStatus !== ticket.status && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Comentário interno</label>
-                  <Textarea
-                    placeholder="Comentário interno sobre a mudança de status (opcional)"
-                    className="min-h-[100px]"
-                    value={internalComments}
-                    onChange={(e) => setInternalComments(e.target.value)}
-                  />
-                </div>
-              )}
-            </CardContent>
-            <CardFooter>
-              <Button 
-                onClick={() => handleStatusChange(currentStatus)}
-                disabled={statusLoading || currentStatus === ticket.status}
-                className="w-full"
-              >
-                {statusLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Atualizar Status
-              </Button>
-            </CardFooter>
-          </Card>
-          
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Histórico de Status</CardTitle>
-              <CardDescription>
-                Mudanças de status do chamado
+                Acompanhe o progresso e gerencie o chamado
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {ticket.statusHistory && ticket.statusHistory.length > 0 ? (
-                <div className="space-y-3">
-                  {ticket.statusHistory.map((history, index) => {
-                    const fromStatus = statusMap[history.from] || { label: history.from, color: '#3b82f6' }
-                    const toStatus = statusMap[history.to] || { label: history.to, color: '#3b82f6' }
-                    
-                    return (
-                      <div key={index} className="border-l-2 border-neutral-200 pl-3 py-1">
-                        <p className="text-sm text-neutral-600">
-                          <span className="font-medium">
-                            {new Date(history.date).toLocaleDateString('pt-BR')} {' '}
-                            {new Date(history.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </p>
-                        <p className="text-sm mt-1">
-                          Alterado de <span style={{ color: fromStatus.color }}>{fromStatus.label}</span> para <span style={{ color: toStatus.color }}>{toStatus.label}</span>
-                        </p>
-                        {history.comments && (
-                          <p className="text-xs text-neutral-500 mt-1">{history.comments}</p>
-                        )}
-                      </div>
-                    )
-                  })}
+              {/* Timeline de progresso do chamado */}
+              <TicketTimeline 
+                currentStatus={ticket.status}
+                statusHistory={ticket.statusHistory}
+                createdAt={ticket.createdAt}
+                resolvedAt={ticket.status === 'resolvido' ? ticket.updatedAt : undefined}
+              />
+              
+              <Separator className="my-6" />
+              
+              {/* Controles para atualizar o status */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Atualizar status</label>
+                  <Select
+                    value={currentStatus}
+                    onValueChange={setCurrentStatus}
+                    disabled={statusLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              ) : (
-                <p className="text-neutral-500 text-sm">Nenhuma mudança de status registrada</p>
-              )}
+                
+                {currentStatus !== ticket.status && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Comentário interno</label>
+                    <Textarea
+                      placeholder="Comentário interno sobre a mudança de status (opcional)"
+                      className="min-h-[100px]"
+                      value={internalComments}
+                      onChange={(e) => setInternalComments(e.target.value)}
+                    />
+                  </div>
+                )}
+                
+                <Button 
+                  onClick={() => handleStatusChange(currentStatus)}
+                  disabled={statusLoading || currentStatus === ticket.status}
+                  className="w-full"
+                >
+                  {statusLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Atualizar Status
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -37,7 +37,7 @@ export async function sendEmail({
   subject,
   htmlBody,
   textBody,
-  from = process.env.EMAIL_FROM || 'contato@2clicks.com.br'
+  from = process.env.EMAIL_FROM || 'contato@piaget.com.br'
 }: SendEmailParams): Promise<SendEmailResult> {
   const recipients = Array.isArray(to) ? to : [to];
   
@@ -126,7 +126,7 @@ function getBaseEmailHtml(content: string): string {
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta http-equiv="X-UA-Compatible" content="IE=edge">
-      <title>2Clicks - Sistema de Chamados</title>
+      <title>Piaget - Sistema de Chamados</title>
       <style type="text/css">
         @media screen and (max-width: 525px) {
           .responsive-table {
@@ -176,7 +176,7 @@ function getBaseEmailHtml(content: string): string {
               <table width="100%">
                 <tr>
                   <td style="text-align: center; padding: 20px 0; background-color: #1e293b; border-radius: 8px 8px 0 0;">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 24px;">2Clicks</h1>
+                    <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Piaget</h1>
                     <p style="margin: 5px 0 0; color: #cbd5e1; font-size: 16px;">Sistema de Chamados</p>
                   </td>
                 </tr>
@@ -188,7 +188,7 @@ function getBaseEmailHtml(content: string): string {
                 <tr>
                   <td style="background-color: #f1f5f9; text-align: center; padding: 15px; border-radius: 0 0 8px 8px;">
                     <p style="margin: 0; color: #64748b; font-size: 14px;">
-                      © ${new Date().getFullYear()} 2Clicks - Todos os direitos reservados
+                      © ${new Date().getFullYear()} Piaget - Todos os direitos reservados
                     </p>
                   </td>
                 </tr>
@@ -200,7 +200,7 @@ function getBaseEmailHtml(content: string): string {
           <tr>
             <td style="padding: 15px;">
               <p>Este é um email automático. Por favor, não responda diretamente a este email.</p>
-              <p>Se precisar de assistência, acesse o <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://escuta.2clicks.com.br'}" style="color: #3b82f6; text-decoration: none;">Portal Escuta 2Clicks</a>.</p>
+              <p>Se precisar de assistência, acesse o <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://escuta.piaget.com.br'}" style="color: #3b82f6; text-decoration: none;">Portal Escuta Piaget</a>.</p>
             </td>
           </tr>
         </table>
@@ -268,7 +268,7 @@ export async function sendTicketNotification(ticket: Ticket): Promise<SendEmailR
       
       <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
         <p style="margin-bottom: 5px; font-size: 14px;">Atenciosamente,</p>
-        <p style="margin: 0; font-weight: bold; font-size: 16px;">Equipe 2Clicks</p>
+        <p style="margin: 0; font-weight: bold; font-size: 16px;">Equipe Piaget</p>
       </div>
     `;
     
@@ -288,7 +288,7 @@ Estamos comprometidos em responder ${ticket.type === 'denuncia' ? 'em até 48 ho
 Você pode acompanhar o status do seu chamado através do protocolo informado acima.
 
 Atenciosamente,
-Equipe 2Clicks
+Equipe Piaget
     `;
     
     // Enviar email para o usuário
@@ -351,7 +351,7 @@ Equipe 2Clicks
       </table>
       
       <div style="margin-bottom: 25px;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://escuta.2clicks.com.br'}/admin/chamados" style="display: inline-block; padding: 12px 24px; background-color: #1e40af; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; text-align: center;">Acessar Painel Administrativo</a>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://escuta.piaget.com.br'}/admin/chamados" style="display: inline-block; padding: 12px 24px; background-color: #1e40af; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; text-align: center;">Ver Chamado</a>
       </div>
       
       <p style="margin-bottom: 10px; font-size: 14px; color: #64748b;">Este ${typeInfo.name.toLowerCase()} deve ser respondido ${ticket.type === 'denuncia' ? 'em até 48 horas' : 'em até 15 dias úteis'}.</p>
@@ -373,12 +373,12 @@ Detalhes do ${typeInfo.name}:
 Este ${typeInfo.name.toLowerCase()} deve ser respondido ${ticket.type === 'denuncia' ? 'em até 48 horas' : 'em até 15 dias úteis'}.
 
 Acesse o painel administrativo para responder:
-${process.env.NEXT_PUBLIC_APP_URL || 'https://escuta.2clicks.com.br'}/admin/chamados
+${process.env.NEXT_PUBLIC_APP_URL || 'https://escuta.piaget.com.br'}/admin/chamados
     `;
     
     // Enviar email para os administradores
     await sendEmail({
-      to: process.env.ADMIN_EMAIL || 'contato@2clicks.com.br',
+      to: process.env.ADMIN_EMAIL || 'contato@piaget.com.br',
       subject: `Novo ${typeInfo.name} #${ticket.protocol} - Requer Atenção`,
       htmlBody: getBaseEmailHtml(adminEmailContent),
       textBody: adminEmailPlainText
@@ -447,7 +447,7 @@ export async function sendStatusUpdateNotification(ticket: Ticket): Promise<Send
       
       <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
         <p style="margin-bottom: 5px; font-size: 14px;">Atenciosamente,</p>
-        <p style="margin: 0; font-weight: bold; font-size: 16px;">Equipe 2Clicks</p>
+        <p style="margin: 0; font-weight: bold; font-size: 16px;">Equipe Piaget</p>
       </div>
     `;
     
@@ -466,7 +466,7 @@ Detalhes da Atualização:
 Você pode verificar mais detalhes sobre seu chamado entrando em contato com nossa equipe e informando o número do protocolo.
 
 Atenciosamente,
-Equipe 2Clicks
+Equipe Piaget
     `;
     
     await sendEmail({

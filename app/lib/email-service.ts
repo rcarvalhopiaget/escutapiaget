@@ -15,7 +15,7 @@ export async function sendEmail({
   subject,
   htmlBody,
   textBody,
-  from = process.env.EMAIL_FROM || 'contato@2clicks.com.br'
+  from: customFrom
 }: {
   to: string | string[];
   subject: string;
@@ -26,6 +26,14 @@ export async function sendEmail({
   const recipients = Array.isArray(to) ? to : [to];
   
   try {
+    // Define o endereço de origem padrão
+    let from: string
+    if (customFrom) {
+      from = customFrom
+    } else {
+      from = process.env.EMAIL_FROM || 'contato@piaget.com.br'
+    }
+
     const params = {
       Source: from,
       Destination: {

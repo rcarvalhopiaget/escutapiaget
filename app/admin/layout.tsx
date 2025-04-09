@@ -2,8 +2,8 @@ import { Metadata } from "next"
 import { Toaster } from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
-  title: "Painel Administrativo | 2Clicks",
-  description: "Painel administrativo para gestão da plataforma 2Clicks",
+  title: "Painel Administrativo | Piaget",
+  description: "Painel administrativo para gestão da plataforma Piaget",
 }
 
 /**

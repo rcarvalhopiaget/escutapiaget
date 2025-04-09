@@ -15,7 +15,7 @@ import { toast } from 'sonner'
 // Metadata ainda pode ser exportada de um client component, mas é menos comum.
 // Alternativamente, definir no layout.tsx se for estático.
 // export const metadata: Metadata = {
-//   title: 'Formulário de Denúncia Anti-Bullying - 2Clicks',
+//   title: 'Formulário de Denúncia Anti-Bullying - Piaget',
 //   description: 'Use este formulário para denunciar casos de bullying.',
 // }
 
@@ -106,8 +106,8 @@ export default function AntiBullyingFormPage() {
             </p>
             <p className="text-red-700">
               Para fazer uma denúncia, entre em contato diretamente com nossa coordenadora através do e-mail: 
-              <a href="mailto:antibullying@2clicks.com.br" className="font-medium underline ml-1">
-                antibullying@2clicks.com.br
+              <a href="mailto:antibullying@piaget.com.br" className="font-medium underline ml-1">
+                antibullying@piaget.com.br
               </a>
             </p>
           </div>
@@ -139,7 +139,7 @@ export default function AntiBullyingFormPage() {
           <div>
             <h2 className="text-xl font-semibold mb-4">Nosso Compromisso</h2>
             <p>
-              A 2Clicks está comprometida em proporcionar um ambiente seguro e 
+              A Piaget está comprometida em proporcionar um ambiente seguro e 
               acolhedor para todos os alunos. Trabalhamos ativamente na prevenção do bullying 
               através de programas educativos e da promoção do respeito mútuo e da empatia.
             </p>

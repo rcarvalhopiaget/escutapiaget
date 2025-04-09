@@ -1,6 +1,6 @@
-# Arquivo robots.txt para 2Clicks
+# Arquivo robots.txt para Piaget
 User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://2clicks.up.railway.app/sitemap.xml 
+Sitemap: https://piaget.up.railway.app/sitemap.xml 

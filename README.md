@@ -1,6 +1,6 @@
-# Sistema de Chamados - 2Clicks
+# Sistema de Chamados - Piaget
 
-Sistema completo de chamados para a 2Clicks, destinado a pais de alunos e funcionários para registro de reclamações, denúncias, sugestões e dúvidas.
+Sistema completo de chamados para a Piaget, destinado a pais de alunos e funcionários para registro de reclamações, denúncias, sugestões e dúvidas.
 
 ## 🎯 Funcionalidades
 
@@ -49,7 +49,7 @@ Sistema completo de chamados para a 2Clicks, destinado a pais de alunos e funcio
 
 1. **Clone o repositório**:
    ```bash
-   git clone https://github.com/2clicks/sistema-chamados.git
+   git clone https://github.com/piaget/sistema-chamados.git
    cd sistema-chamados
    ```
 
@@ -113,10 +113,10 @@ Sistema completo de chamados para a 2Clicks, destinado a pais de alunos e funcio
 
 ## 📝 Licença
 
-Este projeto é propriedade da 2Clicks. Todos os direitos reservados.
+Este projeto é propriedade da Piaget. Todos os direitos reservados.
 
 ## 👥 Contato
 
 Para mais informações ou suporte, entre em contato com:
-- Email: contato@2clicks.tech
+- Email: contato@piaget.com.br
 - Telefone: (11) 99124-9874

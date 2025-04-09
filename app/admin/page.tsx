@@ -99,8 +99,8 @@ export default function AdminPage() {
             </TabsContent>
           </Tabs>
 
-          <footer className="mt-20 text-center text-gray-500 text-sm">
-            © {new Date().getFullYear()} 2Clicks - Sistema de Ouvidoria
+          <footer className="mt-auto text-center py-4 text-sm text-neutral-500">
+            © {new Date().getFullYear()} Piaget - Sistema de Ouvidoria
           </footer>
         </div>
       </div>

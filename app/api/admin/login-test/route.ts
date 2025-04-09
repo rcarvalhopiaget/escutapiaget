@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   
   try {
     // Simular autenticação
-    const email = 'admin@2clicks.com.br'
+    const email = 'admin@piaget.com.br'
     const password = 'admin123'
     
     console.log(`[Login Test] Tentando fazer login com ${email}`)
