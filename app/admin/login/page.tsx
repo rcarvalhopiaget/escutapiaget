@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { signIn, useSession } from 'next-auth/react'
+import { signIn, useSession, signOut } from 'next-auth/react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { AlertCircle, Loader2, LogOut } from 'lucide-react'
 
 // Schema de validação do formulário de login
 const loginSchema = z.object({
@@ -29,8 +29,7 @@ function LoginForm() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()
-  // Ignorar o callbackUrl que pode estar causando loops
-  // const callbackUrl = searchParams.get('from') || searchParams.get('callbackUrl') || '/admin/dashboard'
+  const [isLooping, setIsLooping] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
   const [isReady, setIsReady] = useState(false)
@@ -45,14 +44,72 @@ function LoginForm() {
     defaultValues: { email: '', password: '' }
   })
 
-  // Inicialização do componente
+  // Detectar possíveis loops de redirecionamento
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const url = window.location.href
+      const from = searchParams.get('from')
+      const timestamp = searchParams.get('t')
+      
+      console.log('[LoginForm] URL atual:', url)
+      console.log('[LoginForm] Parâmetro from:', from)
+      console.log('[LoginForm] Timestamp:', timestamp)
+      
+      // Checar se estamos em um possível loop
+      if (from === '/admin/dashboard') {
+        // Verificar se temos marcas de tempo recentes (últimos 30 segundos)
+        if (timestamp) {
+          const currentTime = Date.now()
+          const urlTime = parseInt(timestamp)
+          
+          if (!isNaN(urlTime) && currentTime - urlTime < 30000) {
+            console.log('[LoginForm] Possível loop de redirecionamento detectado!')
+            setIsLooping(true)
+            
+            // Armazenar isso para evitar redirecionamentos automáticos
+            localStorage.setItem('login_loop_detected', 'true')
+            
+            toast.error('Loop de redirecionamento detectado', {
+              description: 'O sistema detectou um possível loop. Tente fazer logout e login novamente.'
+            })
+          }
+        }
+      }
+      
       // Limpar qualquer estado de redirecionamento anterior
       localStorage.removeItem('redirectAttempts')
       setIsReady(true)
     }
-  }, [])
+  }, [searchParams])
+
+  // Função para forçar logout e resetar o estado
+  const handleForcedLogout = async () => {
+    try {
+      console.log('[LoginForm] Iniciando logout forçado para quebrar o loop')
+      localStorage.removeItem('login_loop_detected')
+      
+      // Remover todos os cookies relacionados à sessão
+      document.cookie.split(';').forEach(cookie => {
+        const [name] = cookie.trim().split('=')
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+      })
+      
+      // Forçar logout via NextAuth
+      await signOut({ redirect: false })
+      
+      // Recarregar a página após breve delay
+      setTimeout(() => {
+        window.location.href = '/admin/login?reset=true'
+      }, 500)
+      
+    } catch (error) {
+      console.error('[LoginForm] Erro ao forçar logout:', error)
+      
+      // Como último recurso, limpar a sessão e recarregar
+      localStorage.clear()
+      window.location.href = '/admin/login?clean=true'
+    }
+  }
 
   // Verificar periodicamente a autenticação
   useEffect(() => {
@@ -61,6 +118,12 @@ function LoginForm() {
     console.log('[LoginForm] Status:', status)
     console.log('[LoginForm] Session:', session)
     
+    // Se detectamos um loop, não tente redirecionamento automático
+    if (localStorage.getItem('login_loop_detected') === 'true') {
+      console.log('[LoginForm] Loop detectado anteriormente, cancelando redirecionamento automático')
+      return
+    }
+    
     if (status === 'authenticated' && session?.user?.role === 'admin' && !redirecting) {
       console.log('[LoginForm] Usuário autenticado como admin, tentando redirecionamento direto')
       
@@ -68,7 +131,7 @@ function LoginForm() {
         setRedirecting(true)
         
         // URL hardcoded para o dashboard com timestamp para evitar cache
-        const dashboardUrl = `/admin/dashboard?t=${Date.now()}`
+        const dashboardUrl = `/admin/dashboard?clean=true&t=${Date.now()}`
         console.log(`[LoginForm] Redirecionando para: ${dashboardUrl}`)
         
         // Usar várias abordagens para garantir o redirecionamento
@@ -138,7 +201,7 @@ function LoginForm() {
         
         // Tentar redirecionamento direto após breve espera
         setTimeout(() => {
-          const dashboardUrl = `/admin/dashboard?t=${Date.now()}`
+          const dashboardUrl = `/admin/dashboard?clean=true&t=${Date.now()}`
           window.location.href = dashboardUrl
         }, 1500)
       }
@@ -159,6 +222,27 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
+      {isLooping && (
+        <div className="mb-6 p-4 border border-red-200 bg-red-50 rounded-md flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+          <div>
+            <h3 className="font-medium text-red-800">Problema de redirecionamento detectado</h3>
+            <p className="text-sm text-red-700 mt-1">
+              O sistema detectou um possível loop de redirecionamento. Isso pode ocorrer quando há problemas com a sessão.
+            </p>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              className="mt-3 w-full"
+              onClick={handleForcedLogout}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Forçar Logout e Limpar Cookies
+            </Button>
+          </div>
+        </div>
+      )}
+      
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold">Painel Administrativo</h1>
         <p className="text-neutral-600">Acesso restrito à equipe autorizada</p>
@@ -232,7 +316,7 @@ function LoginForm() {
               size="lg" 
               className="w-full bg-green-600 hover:bg-green-700"
               onClick={() => {
-                const dashboardUrl = `/admin/dashboard?t=${Date.now()}`
+                const dashboardUrl = `/admin/dashboard?manual=true&t=${Date.now()}`
                 window.location.href = dashboardUrl
               }}
             >
