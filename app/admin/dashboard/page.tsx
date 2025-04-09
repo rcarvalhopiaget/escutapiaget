@@ -450,7 +450,7 @@ export default function Dashboard() {
                     
                     <div className="mt-4 text-center">
                       <a 
-                        href="/admin/chamados?access=auth" 
+                        href="/admin/chamados" 
                         className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
                       >
                         Ver todos os chamados

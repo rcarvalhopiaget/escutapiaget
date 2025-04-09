@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Toaster } from '@/components/ui/sonner'
 import { DataTable } from '@/components/ui/data-table'
 import { AdminHeader } from '@/components/admin/admin-header'
+import AuthGuard from '../components/auth-guard'
 
 import { ticketColumns } from './columns'
 import { Ticket } from '@/app/types/ticket'
@@ -166,177 +167,179 @@ export default function ChamadosPage() {
   }
 
   return (
-    <div className="container py-10 max-w-7xl">
-      <AdminHeader 
-        title="Gerenciamento de Chamados" 
-        description="Gerencie todos os chamados recebidos pela escola"
-      />
-      
-      <div className="flex justify-end items-center mb-6">
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={handleExportCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Exportar CSV
-          </Button>
-          <Button onClick={handleAddTicket}>
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Novo Chamado
-          </Button>
+    <AuthGuard requiredRole="admin" requiredPermission="viewTickets">
+      <div className="container py-10 max-w-7xl">
+        <AdminHeader 
+          title="Gerenciamento de Chamados" 
+          description="Gerencie todos os chamados recebidos pela escola"
+        />
+        
+        <Toaster />
+        
+        <div className="flex justify-end items-center mb-6">
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={handleExportCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
+            <Button onClick={handleAddTicket}>
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Novo Chamado
+            </Button>
+          </div>
         </div>
+
+        <Tabs defaultValue="all" onValueChange={handleTabChange}>
+          <div className="flex justify-between items-center">
+            <TabsList>
+              <TabsTrigger value="all">
+                Todos
+                <Badge variant="outline" className="ml-2">
+                  {tickets.length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="aberto">
+                Abertos
+                <Badge variant="outline" className="ml-2">
+                  {tickets.filter(t => t.status === 'aberto').length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="em_analise">
+                Em Análise
+                <Badge variant="outline" className="ml-2">
+                  {tickets.filter(t => t.status === 'em_analise').length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="respondido">
+                Respondidos
+                <Badge variant="outline" className="ml-2">
+                  {tickets.filter(t => t.status === 'respondido').length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="encaminhado">
+                Encaminhados
+                <Badge variant="outline" className="ml-2">
+                  {tickets.filter(t => t.status === 'encaminhado').length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="resolvido">
+                Resolvidos
+                <Badge variant="outline" className="ml-2">
+                  {tickets.filter(t => t.status === 'resolvido').length}
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="all" className="mt-4">
+            <div className="rounded-md border">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
+                  <span className="ml-2 text-neutral-500">Carregando chamados...</span>
+                </div>
+              ) : (
+                <DataTable
+                  columns={ticketColumns}
+                  data={tickets}
+                  searchColumn="protocol"
+                  searchPlaceholder="Buscar por protocolo..."
+                />
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="aberto" className="mt-4">
+            <div className="rounded-md border">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
+                  <span className="ml-2 text-neutral-500">Carregando chamados...</span>
+                </div>
+              ) : (
+                <DataTable
+                  columns={ticketColumns}
+                  data={tickets.filter(t => t.status === 'aberto')}
+                  searchColumn="protocol"
+                  searchPlaceholder="Buscar por protocolo..."
+                />
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="em_analise" className="mt-4">
+            <div className="rounded-md border">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
+                  <span className="ml-2 text-neutral-500">Carregando chamados...</span>
+                </div>
+              ) : (
+                <DataTable
+                  columns={ticketColumns}
+                  data={tickets.filter(t => t.status === 'em_analise')}
+                  searchColumn="protocol"
+                  searchPlaceholder="Buscar por protocolo..."
+                />
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="respondido" className="mt-4">
+            <div className="rounded-md border">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
+                  <span className="ml-2 text-neutral-500">Carregando chamados...</span>
+                </div>
+              ) : (
+                <DataTable
+                  columns={ticketColumns}
+                  data={tickets.filter(t => t.status === 'respondido')}
+                  searchColumn="protocol"
+                  searchPlaceholder="Buscar por protocolo..."
+                />
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="encaminhado" className="mt-4">
+            <div className="rounded-md border">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
+                  <span className="ml-2 text-neutral-500">Carregando chamados...</span>
+                </div>
+              ) : (
+                <DataTable
+                  columns={ticketColumns}
+                  data={tickets.filter(t => t.status === 'encaminhado')}
+                  searchColumn="protocol"
+                  searchPlaceholder="Buscar por protocolo..."
+                />
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="resolvido" className="mt-4">
+            <div className="rounded-md border">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
+                  <span className="ml-2 text-neutral-500">Carregando chamados...</span>
+                </div>
+              ) : (
+                <DataTable
+                  columns={ticketColumns}
+                  data={tickets.filter(t => t.status === 'resolvido')}
+                  searchColumn="protocol"
+                  searchPlaceholder="Buscar por protocolo..."
+                />
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      <Tabs defaultValue="all" onValueChange={handleTabChange}>
-        <div className="flex justify-between items-center">
-          <TabsList>
-            <TabsTrigger value="all">
-              Todos
-              <Badge variant="outline" className="ml-2">
-                {tickets.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="aberto">
-              Abertos
-              <Badge variant="outline" className="ml-2">
-                {tickets.filter(t => t.status === 'aberto').length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="em_analise">
-              Em Análise
-              <Badge variant="outline" className="ml-2">
-                {tickets.filter(t => t.status === 'em_analise').length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="respondido">
-              Respondidos
-              <Badge variant="outline" className="ml-2">
-                {tickets.filter(t => t.status === 'respondido').length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="encaminhado">
-              Encaminhados
-              <Badge variant="outline" className="ml-2">
-                {tickets.filter(t => t.status === 'encaminhado').length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="resolvido">
-              Resolvidos
-              <Badge variant="outline" className="ml-2">
-                {tickets.filter(t => t.status === 'resolvido').length}
-              </Badge>
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="all" className="mt-4">
-          <div className="rounded-md border">
-            {isLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
-                <span className="ml-2 text-neutral-500">Carregando chamados...</span>
-              </div>
-            ) : (
-              <DataTable
-                columns={ticketColumns}
-                data={tickets}
-                searchColumn="protocol"
-                searchPlaceholder="Buscar por protocolo..."
-              />
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="aberto" className="mt-4">
-          <div className="rounded-md border">
-            {isLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
-                <span className="ml-2 text-neutral-500">Carregando chamados...</span>
-              </div>
-            ) : (
-              <DataTable
-                columns={ticketColumns}
-                data={tickets.filter(t => t.status === 'aberto')}
-                searchColumn="protocol"
-                searchPlaceholder="Buscar por protocolo..."
-              />
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="em_analise" className="mt-4">
-          <div className="rounded-md border">
-            {isLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
-                <span className="ml-2 text-neutral-500">Carregando chamados...</span>
-              </div>
-            ) : (
-              <DataTable
-                columns={ticketColumns}
-                data={tickets.filter(t => t.status === 'em_analise')}
-                searchColumn="protocol"
-                searchPlaceholder="Buscar por protocolo..."
-              />
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="respondido" className="mt-4">
-          <div className="rounded-md border">
-            {isLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
-                <span className="ml-2 text-neutral-500">Carregando chamados...</span>
-              </div>
-            ) : (
-              <DataTable
-                columns={ticketColumns}
-                data={tickets.filter(t => t.status === 'respondido')}
-                searchColumn="protocol"
-                searchPlaceholder="Buscar por protocolo..."
-              />
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="encaminhado" className="mt-4">
-          <div className="rounded-md border">
-            {isLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
-                <span className="ml-2 text-neutral-500">Carregando chamados...</span>
-              </div>
-            ) : (
-              <DataTable
-                columns={ticketColumns}
-                data={tickets.filter(t => t.status === 'encaminhado')}
-                searchColumn="protocol"
-                searchPlaceholder="Buscar por protocolo..."
-              />
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="resolvido" className="mt-4">
-          <div className="rounded-md border">
-            {isLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-neutral-500" />
-                <span className="ml-2 text-neutral-500">Carregando chamados...</span>
-              </div>
-            ) : (
-              <DataTable
-                columns={ticketColumns}
-                data={tickets.filter(t => t.status === 'resolvido')}
-                searchColumn="protocol"
-                searchPlaceholder="Buscar por protocolo..."
-              />
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
-      
-      <Toaster position="top-right" richColors />
-    </div>
+    </AuthGuard>
   )
 } 
