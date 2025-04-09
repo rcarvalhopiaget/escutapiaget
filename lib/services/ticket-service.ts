@@ -154,6 +154,8 @@ export async function getTickets(filters: TicketFilters = {}): Promise<GetTicket
       email: ticket.email || '',
       message: ticket.message,
       response: ticket.response || '',
+      internalComments: ticket.internalComments || '',
+      statusHistory: ticket.statusHistory || [],
       createdAt: ticket.createdAt.toISOString(),
       updatedAt: ticket.updatedAt.toISOString(),
     })) as TicketInterface[]
