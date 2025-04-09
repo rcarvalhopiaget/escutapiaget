@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getTickets } from '@/lib/services/ticket-service'
+import { getTickets } from '../../../../lib/services/ticket-service'
 import { verifyAdminRole } from '@/lib/auth-utils'
 import dbConnect from '@/lib/mongodb'
 import Ticket from '@/lib/models/ticket'
