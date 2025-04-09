@@ -48,6 +48,14 @@ export async function POST(request: NextRequest) {
     // Definir status inicial como 'aberto'
     ticketData.status = 'aberto'
     
+    // Inicializar o histórico de status com o status inicial
+    ticketData.statusHistory = [{
+      from: '',
+      to: 'aberto',
+      date: new Date(),
+      comments: 'Chamado criado'
+    }]
+    
     // Criar um novo chamado
     console.log('[API] Criando novo chamado com protocolo:', ticketData.protocol)
     const newTicket = new Ticket(ticketData)
