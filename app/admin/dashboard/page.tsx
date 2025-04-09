@@ -26,11 +26,12 @@ import { TicketStatus, TicketType } from '@/app/types/ticket'
 interface TicketData {
   id: string;
   protocol: string;
-  title: string;
+  title?: string;
   message: string;
   status: TicketStatus;
   type: TicketType;
   createdAt: string;
+  category?: string;
 }
 
 // Componente de card estatístico
@@ -83,13 +84,14 @@ function StatCard({ title, value, description, icon, trend, color = 'blue' }: St
 // Componente de atividade recente
 interface RecentActivityProps {
   date: string;
-  title: string;
+  title?: string;
   message: string;
   status: TicketStatus;
   type: TicketType;
+  protocol: string;
 }
 
-function RecentActivity({ date, title, message, status, type }: RecentActivityProps) {
+function RecentActivity({ date, title, message, status, type, protocol }: RecentActivityProps) {
   const getStatusColor = (status: TicketStatus): string => {
     switch (status) {
       case TicketStatus.ABERTO: return "bg-blue-500"
@@ -140,46 +142,6 @@ function RecentActivity({ date, title, message, status, type }: RecentActivityPr
   )
 }
 
-// Dados de exemplo
-const MOCK_TICKETS = [
-  { 
-    id: '1', 
-    protocol: '090423-102030', 
-    title: 'Problemas na conexão internet',
-    message: 'Não consigo acessar o sistema, a internet caí frequentemente. Por favor, resolver com urgência.',
-    status: TicketStatus.ABERTO, 
-    type: TicketType.RECLAMACAO,
-    createdAt: '10/04/2023 - 10:20' 
-  },
-  { 
-    id: '2', 
-    protocol: '080423-091545', 
-    title: 'Denúncia de comportamento inadequado',
-    message: 'Gostaria de reportar um comportamento inadequado durante a aula de matemática...',
-    status: TicketStatus.EM_ANALISE, 
-    type: TicketType.DENUNCIA,
-    createdAt: '08/04/2023 - 09:15' 
-  },
-  { 
-    id: '3', 
-    protocol: '070423-152205', 
-    title: 'Sugestão para melhorias no refeitório',
-    message: 'Sugiro algumas melhorias no refeitório para melhor atender os alunos...',
-    status: TicketStatus.RESPONDIDO, 
-    type: TicketType.SUGESTAO,
-    createdAt: '07/04/2023 - 15:22' 
-  },
-  { 
-    id: '4', 
-    protocol: '050423-111020', 
-    title: 'Dúvida sobre o calendário de provas',
-    message: 'Gostaria de saber quando serão realizadas as provas de recuperação deste semestre.',
-    status: TicketStatus.RESOLVIDO, 
-    type: TicketType.DUVIDA,
-    createdAt: '05/04/2023 - 11:10' 
-  },
-]
-
 // Componente Dashboard - corrigindo inconsistências nos nomes de variáveis
 export default function Dashboard() {
   const { data: session, status } = useSession()
@@ -196,6 +158,64 @@ export default function Dashboard() {
     resolvidos: 0,
     emAnalise: 0
   })
+
+  // Função para buscar os dados reais do dashboard
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true)
+      
+      // Buscar os tickets através da API
+      const response = await fetch('/api/admin/tickets', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        console.error('[Dashboard] Erro ao buscar tickets:', response.statusText)
+        return
+      }
+      
+      const data = await response.json()
+      
+      if (data.success && data.tickets) {
+        // Adaptar os dados para o formato esperado pelo componente
+        const ticketsData: TicketData[] = data.tickets.map((ticket: any) => ({
+          id: ticket.id,
+          protocol: ticket.protocol,
+          title: ticket.category || `Chamado ${ticket.protocol}`,
+          message: ticket.message,
+          status: ticket.status as TicketStatus,
+          type: ticket.type as TicketType,
+          createdAt: new Date(ticket.createdAt).toLocaleDateString('pt-BR') + ' - ' + 
+                   new Date(ticket.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          category: ticket.category
+        }))
+        
+        setTickets(ticketsData)
+        
+        // Calcular estatísticas baseadas nos tickets reais
+        const total = ticketsData.length
+        const abertos = ticketsData.filter(t => t.status === TicketStatus.ABERTO).length
+        const emAnalise = ticketsData.filter(t => t.status === TicketStatus.EM_ANALISE).length
+        const respondidos = ticketsData.filter(t => t.status === TicketStatus.RESPONDIDO).length
+        const resolvidos = ticketsData.filter(t => t.status === TicketStatus.RESOLVIDO).length
+        
+        setStats({
+          totalChamados: total,
+          abertos,
+          respondidos,
+          resolvidos,
+          emAnalise
+        })
+      }
+    } catch (error) {
+      console.error('[Dashboard] Erro ao buscar dados do dashboard:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   // Verificação de autenticação com garantia adicional
   useEffect(() => {
@@ -225,24 +245,9 @@ export default function Dashboard() {
     console.log('[Dashboard] Usuário autenticado e autorizado:', session?.user)
     setAuthChecked(true)
     
-    // Simular carregamento dos dados do dashboard
-    const timer = setTimeout(() => {
-      // Carregar dados de exemplo
-      setTickets(MOCK_TICKETS)
-      
-      // Estatísticas 
-      setStats({
-        totalChamados: 125,
-        abertos: 28,
-        respondidos: 45,
-        resolvidos: 37,
-        emAnalise: 18
-      })
-      
-      setIsLoading(false)
-    }, 1000)
+    // Buscar dados reais quando o usuário estiver autenticado
+    fetchDashboardData()
     
-    return () => clearTimeout(timer)
   }, [status, session, router])
   
   // Se ainda está verificando a autenticação, mostre um loader
@@ -355,33 +360,61 @@ export default function Dashboard() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-sm">Reclamações</span>
-                          <span className="text-sm font-medium">42</span>
+                          <span className="text-sm font-medium">
+                            {tickets.filter(t => t.type === TicketType.RECLAMACAO).length}
+                          </span>
                         </div>
-                        <Progress value={42} className="h-2 bg-blue-100" indicatorClassName="bg-blue-500" />
+                        <Progress 
+                          value={tickets.filter(t => t.type === TicketType.RECLAMACAO).length} 
+                          max={tickets.length || 1} 
+                          className="h-2 bg-blue-100" 
+                          indicatorClassName="bg-blue-500" 
+                        />
                       </div>
                       
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-sm">Denúncias</span>
-                          <span className="text-sm font-medium">18</span>
+                          <span className="text-sm font-medium">
+                            {tickets.filter(t => t.type === TicketType.DENUNCIA).length}
+                          </span>
                         </div>
-                        <Progress value={18} max={125} className="h-2 bg-red-100" indicatorClassName="bg-red-500" />
+                        <Progress 
+                          value={tickets.filter(t => t.type === TicketType.DENUNCIA).length} 
+                          max={tickets.length || 1} 
+                          className="h-2 bg-red-100" 
+                          indicatorClassName="bg-red-500" 
+                        />
                       </div>
                       
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-sm">Dúvidas</span>
-                          <span className="text-sm font-medium">37</span>
+                          <span className="text-sm font-medium">
+                            {tickets.filter(t => t.type === TicketType.DUVIDA).length}
+                          </span>
                         </div>
-                        <Progress value={37} max={125} className="h-2 bg-amber-100" indicatorClassName="bg-amber-500" />
+                        <Progress 
+                          value={tickets.filter(t => t.type === TicketType.DUVIDA).length} 
+                          max={tickets.length || 1} 
+                          className="h-2 bg-amber-100" 
+                          indicatorClassName="bg-amber-500" 
+                        />
                       </div>
                       
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-sm">Sugestões</span>
-                          <span className="text-sm font-medium">28</span>
+                          <span className="text-sm font-medium">
+                            {tickets.filter(t => t.type === TicketType.SUGESTAO).length}
+                          </span>
                         </div>
-                        <Progress value={28} max={125} className="h-2 bg-green-100" indicatorClassName="bg-green-500" />
+                        <Progress 
+                          value={tickets.filter(t => t.type === TicketType.SUGESTAO).length} 
+                          max={tickets.length || 1} 
+                          className="h-2 bg-green-100" 
+                          indicatorClassName="bg-green-500" 
+                        />
                       </div>
                     </div>
                   </CardContent>
@@ -410,6 +443,7 @@ export default function Dashboard() {
                           message={ticket.message}
                           status={ticket.status}
                           type={ticket.type}
+                          protocol={ticket.protocol}
                         />
                       ))}
                     </div>
