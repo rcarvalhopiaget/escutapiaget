@@ -22,8 +22,28 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { TicketStatus, TicketType } from '@/app/types/ticket'
 
+// Definição da interface para o tipo de ticket usado no estado
+interface TicketData {
+  id: string;
+  protocol: string;
+  title: string;
+  message: string;
+  status: TicketStatus;
+  type: TicketType;
+  createdAt: string;
+}
+
 // Componente de card estatístico
-function StatCard({ title, value, description, icon, trend, color }) {
+interface StatCardProps {
+  title: string;
+  value: number;
+  description: string;
+  icon: React.ElementType;
+  trend?: number;
+  color?: 'blue' | 'green' | 'amber' | 'red' | 'purple';
+}
+
+function StatCard({ title, value, description, icon, trend, color = 'blue' }: StatCardProps) {
   const IconComponent = icon
   const colorVariants = {
     blue: "text-blue-600 bg-blue-100",
@@ -33,7 +53,7 @@ function StatCard({ title, value, description, icon, trend, color }) {
     purple: "text-purple-600 bg-purple-100",
   }
   
-  const iconClass = colorVariants[color] || colorVariants.blue
+  const iconClass = colorVariants[color]
   
   return (
     <Card>
@@ -48,7 +68,7 @@ function StatCard({ title, value, description, icon, trend, color }) {
           </div>
         </div>
         <div className="flex items-center pt-4">
-          {trend && (
+          {trend !== undefined && (
             <span className={`mr-2 text-xs ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
               {trend > 0 ? '+' : ''}{trend}%
             </span>
@@ -61,8 +81,16 @@ function StatCard({ title, value, description, icon, trend, color }) {
 }
 
 // Componente de atividade recente
-function RecentActivity({ date, title, message, status, type }) {
-  const getStatusColor = (status) => {
+interface RecentActivityProps {
+  date: string;
+  title: string;
+  message: string;
+  status: TicketStatus;
+  type: TicketType;
+}
+
+function RecentActivity({ date, title, message, status, type }: RecentActivityProps) {
+  const getStatusColor = (status: TicketStatus): string => {
     switch (status) {
       case TicketStatus.ABERTO: return "bg-blue-500"
       case TicketStatus.EM_ANALISE: return "bg-amber-500"
@@ -73,7 +101,7 @@ function RecentActivity({ date, title, message, status, type }) {
     }
   }
   
-  const getTypeLabel = (type) => {
+  const getTypeLabel = (type: TicketType): string => {
     switch (type) {
       case TicketType.RECLAMACAO: return "Reclamação"
       case TicketType.DENUNCIA: return "Denúncia"
@@ -152,12 +180,15 @@ const MOCK_TICKETS = [
   },
 ]
 
-export default function AdminDashboard() {
+// Componente Dashboard - corrigindo inconsistências nos nomes de variáveis
+export default function Dashboard() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  
+  // Estado com nomes consistentes
   const [isLoading, setIsLoading] = useState(true)
   const [authChecked, setAuthChecked] = useState(false)
-  const [tickets, setTickets] = useState([])
+  const [tickets, setTickets] = useState<TicketData[]>([])
   const [stats, setStats] = useState({
     totalChamados: 0,
     abertos: 0,
@@ -204,8 +235,8 @@ export default function AdminDashboard() {
         totalChamados: 125,
         abertos: 28,
         respondidos: 45,
-        resolvidos: 42,
-        emAnalise: 10
+        resolvidos: 37,
+        emAnalise: 18
       })
       
       setIsLoading(false)
@@ -275,12 +306,12 @@ export default function AdminDashboard() {
                 color="green" 
               />
               <StatCard 
-                title="Em Análise" 
-                value={stats.emAnalise} 
-                description="Em processo de verificação"
-                icon={Clock} 
-                trend={-3} 
-                color="purple" 
+                title="Resolvidos" 
+                value={stats.resolvidos} 
+                description="Nos últimos 30 dias"
+                icon={CheckCircle} 
+                trend={3} 
+                color="green" 
               />
             </div>
             
