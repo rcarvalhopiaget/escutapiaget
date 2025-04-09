@@ -56,7 +56,7 @@ export default function AdminPage() {
                 </CardHeader>
                 <CardContent>
                   <Button variant="default" asChild>
-                    <Link href="/admin/dashboard">Visualizar Dashboard</Link>
+                    <Link href="/admin/dashboard?access=auth">Visualizar Dashboard</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -68,7 +68,7 @@ export default function AdminPage() {
                 </CardHeader>
                 <CardContent>
                   <Button variant="default" asChild>
-                    <Link href="/admin/chamados">Ver todos os chamados</Link>
+                    <Link href="/admin/chamados?access=auth">Ver todos os chamados</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -80,7 +80,7 @@ export default function AdminPage() {
                 </CardHeader>
                 <CardContent>
                   <Button variant="default" asChild>
-                    <Link href="/admin/perguntas">Gerenciar Perguntas</Link>
+                    <Link href="/admin/perguntas?access=auth">Gerenciar Perguntas</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -92,7 +92,7 @@ export default function AdminPage() {
                 </CardHeader>
                 <CardContent>
                   <Button variant="default" asChild>
-                    <Link href="/admin/usuarios">Gerenciar Usuários</Link>
+                    <Link href="/admin/usuarios?access=auth">Gerenciar Usuários</Link>
                   </Button>
                 </CardContent>
               </Card>

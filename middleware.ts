@@ -56,6 +56,21 @@ export async function middleware(request: NextRequest) {
   // Se tiver qualquer parâmetro de bypass, permitir acesso sem verificação adicional
   if (hasCleanParam || hasManualParam || hasResetParam || hasAccessParam) {
     console.log(`[Middleware] Detectado parâmetro especial de bypass. Permitindo navegação direta.`);
+    
+    // Se for parâmetro de acesso auth, vamos adicionar um cookie especial para evitar
+    // que o usuário seja redirecionado para login nas navegações internas
+    if (hasAccessParam) {
+      const response = NextResponse.next();
+      // Adicionamos um cookie auxiliar que expira em 8 horas
+      response.cookies.set('admin_access', 'true', { 
+        maxAge: 60 * 60 * 8, // 8 horas
+        path: '/admin',
+        httpOnly: true,
+        sameSite: 'lax'
+      });
+      return response;
+    }
+    
     return NextResponse.next();
   }
   
@@ -74,12 +89,14 @@ export async function middleware(request: NextRequest) {
     console.log(`[Middleware] Verificando autenticação para rota admin: ${pathname}`);
     const sessionCookieName = getSessionCookieName();
     const sessionCookie = request.cookies.get(sessionCookieName);
+    const adminAccessCookie = request.cookies.get('admin_access');
     
     console.log(`[Middleware] Cookie de sessão ${sessionCookieName} existe: ${!!sessionCookie}`);
+    console.log(`[Middleware] Cookie admin_access existe: ${!!adminAccessCookie}`);
 
-    // Redireciona para login se não houver cookie de sessão
-    if (!sessionCookie) {
-      console.log(`[Middleware] Sem cookie de sessão. Redirecionando para login.`);
+    // Redireciona para login se não houver nem cookie de sessão nem cookie admin_access
+    if (!sessionCookie && !adminAccessCookie) {
+      console.log(`[Middleware] Sem cookies de autenticação. Redirecionando para login.`);
       const url = new URL('/admin/login', request.url);
       
       // Adicionar o caminho original como parâmetro, exceto se for potencialmente circular
