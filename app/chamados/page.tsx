@@ -1,16 +1,17 @@
-import { Metadata } from 'next'
+'use client'
+
 import { MessageSquareWarning, HelpCircle, AlertTriangle, Lightbulb, ShieldAlert } from 'lucide-react'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 import { TicketType } from '../types/ticket'
 import { Button } from '@/components/ui/button'
 import { PanelLeftOpen } from 'lucide-react'
 
-export const metadata: Metadata = {
-  title: 'Sistema de Chamados - Piaget',
-  description: 'Envie reclamações, sugestões, dúvidas ou solicite informações sobre privacidade de dados',
-}
-
 export default function TicketsPage() {
+  const { data: session } = useSession()
+  
+  const isAdmin = session?.user?.role === 'admin'
+  
   return (
     <div className="container max-w-5xl mx-auto py-10 px-4 sm:px-6">
       <div className="flex justify-between items-center mb-6">
@@ -21,12 +22,14 @@ export default function TicketsPage() {
             automático e serão respondidos dentro do prazo.
           </p>
         </div>
-        <Button variant="outline" asChild>
-          <Link href="/admin">
-            <PanelLeftOpen className="h-4 w-4 mr-2" />
-            Administração
-          </Link>
-        </Button>
+        {isAdmin && (
+          <Button variant="outline" asChild>
+            <Link href="/admin">
+              <PanelLeftOpen className="h-4 w-4 mr-2" />
+              Administração
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
