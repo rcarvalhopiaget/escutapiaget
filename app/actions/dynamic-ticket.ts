@@ -7,6 +7,7 @@ import dbConnect from '@/lib/mongodb'
 import Ticket from '@/lib/models/ticket'
 import { TicketStatus, TicketType } from '@/app/types/ticket'
 import { calculateDeadlineDate, generateProtocol } from '@/lib/utils'
+import { sendTicketNotification } from '@/lib/email-service'
 
 // Inicializa o cliente de ação segura - Comentado
 // export const action = createSafeActionClient()
@@ -128,6 +129,36 @@ export async function createTicketWithAnswers(data: InputType) {
     })
 
     await newTicket.save()
+
+    // Enviar notificações de email
+    try {
+      // Criar objeto com dados relevantes para a notificação por email
+      const ticketNotificationData = {
+        protocol,
+        type: validData.type,
+        category: validData.category,
+        name: validData.name || '',
+        email: validData.email || '',
+        createdAt: new Date(),
+        message: generatedMessage
+      };
+      
+      // Enviar notificação de forma assíncrona
+      sendTicketNotification(ticketNotificationData)
+        .then(result => {
+          if (result.success) {
+            console.log(`Notificações de email enviadas com sucesso para o ticket ${protocol}`);
+          } else {
+            console.error(`Erro ao enviar notificações de email para o ticket ${protocol}:`, result.error);
+          }
+        })
+        .catch(err => {
+          console.error(`Falha ao enviar notificação por email para o ticket ${protocol}:`, err);
+        });
+    } catch (emailError) {
+      // Apenas logar o erro, não impedir a criação do ticket
+      console.error('Erro ao enviar notificações por email:', emailError);
+    }
 
     const deadlineText = validData.type === TicketType.DENUNCIA ? '48 horas' : '15 dias'
 

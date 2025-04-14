@@ -17,6 +17,7 @@ import { Loader2 } from 'lucide-react'
 import { createTicketWithAnswers } from '@/app/actions/dynamic-ticket'
 import { Question, QuestionType } from '@/app/types/question'
 import { FileUpload } from '@/components/ui/file-upload'
+import { QuestionLoadingError } from './question-loading-error'
 
 interface DynamicQuestionFormProps {
   ticketType: TicketType
@@ -54,6 +55,8 @@ export function DynamicQuestionForm({
   // Para acompanhar todas as respostas e perguntas a serem exibidas
   const [activeQuestionIds, setActiveQuestionIds] = useState<Set<string>>(new Set());
 
+  const [loadError, setLoadError] = useState<string | null>(null)
+
   const form = useForm<DynamicFormValues>({
     resolver: zodResolver(baseDynamicFormSchema),
     defaultValues: {
@@ -69,89 +72,142 @@ export function DynamicQuestionForm({
   useEffect(() => {
     async function fetchQuestions() {
       setIsLoadingQuestions(true)
+      setLoadError(null)
       console.log(`Buscando perguntas para tipo: ${ticketType}, categoria: ${ticketCategory}`)
-      try {
-        // Chamar a nova API route
-        const response = await fetch(`/api/questions?category=${ticketCategory}`, {
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Erro ao buscar perguntas: ${response.status} - ${response.statusText}`);
-        }
-        
-        const data: Question[] = await response.json();
-        
-        console.log(`[DEBUG] API retornou ${data.length} perguntas para categoria "${ticketCategory}":`, data);
-        
-        // Ordenar por 'order' (API já deve retornar ordenado, mas é bom garantir)
-        data.sort((a, b) => a.order - b.order);
 
-        setQuestions(data);
+      // Número máximo de tentativas
+      const MAX_RETRIES = 3;
+      let attempts = 0;
+      let lastError = null;
 
-        // Encontrar o ID da pergunta de identificação
-        const idQ = data.find(q => q.text === IDENTIFICATION_QUESTION_TEXT)?._id || null;
-        setIdentificationQuestionId(idQ);
-        console.log('[useEffect] identificationQuestionId encontrado:', idQ);
-        if (ticketType === TicketType.DENUNCIA && !idQ) {
-            console.warn(`Pergunta de identificação ("${IDENTIFICATION_QUESTION_TEXT}") não encontrada para a categoria "${ticketCategory}". Nome/Email serão mostrados por padrão.`);
-        }
+      while (attempts < MAX_RETRIES) {
+        try {
+          attempts++;
+          console.log(`Tentativa ${attempts} de ${MAX_RETRIES} para buscar perguntas...`);
 
-        // Inicializar perguntas ativas com todas as perguntas, exceto as que estão em um fluxo de pulo
-        const initialActiveQuestions = new Set<string>();
-        data.forEach(question => {
-          // Adicionar a pergunta de identificação sempre
-          if (question._id === idQ) {
-            initialActiveQuestions.add(question._id);
-            return;
-          }
+          // Adicionar um timestamp para evitar cache
+          const timestamp = new Date().getTime();
+          const apiUrl = `/api/questions?category=${encodeURIComponent(ticketCategory)}&_t=${timestamp}`;
           
-          // Verificar se a pergunta está no fluxo de pulo de outra pergunta
-          const isPartOfSkipFlow = data.some(q => 
-            q.options?.some(opt => 
-              opt.nextQuestionId === question._id || 
-              (opt.nextQuestionsIds && opt.nextQuestionsIds.includes(question._id))
-            )
-          );
+          console.log(`[DEBUG] Chamando API: ${apiUrl}`);
           
-          // Se não for parte de um fluxo de pulo, adicionar como pergunta ativa inicial
-          if (!isPartOfSkipFlow) {
-            initialActiveQuestions.add(question._id);
-          }
-        });
-        
-        setActiveQuestionIds(initialActiveQuestions);
-
-        // Pré-registrar campos e setar defaults
-        const defaultAnswers: Record<string, any> = {}
-        data.forEach(q => {
-            if (q._id === idQ && q.type === QuestionType.RADIO) {
-                // Encontrar a opção "NAO" e usar seu texto
-                const naoOption = q.options?.find(opt => opt.text === 'NAO');
-                defaultAnswers[q._id] = naoOption?.text || 'NAO';
-            } else if (q.type === QuestionType.CHECKBOX) {
-                defaultAnswers[q._id] = []; // Array vazio para checkbox
-            } else {
-                defaultAnswers[q._id] = '';
+          // Chamar a API route
+          const response = await fetch(apiUrl, {
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
             }
-        });
-        form.reset({ 
-            ...form.getValues(), 
-            answers: defaultAnswers 
-        }, { keepDefaultValues: true });
-
-      } catch (error) {
-          console.error("Erro ao carregar perguntas:", error);
-          toast.error("Erro ao carregar formulário", {
-              description: error instanceof Error ? error.message : "Não foi possível buscar as perguntas."
           });
-          // Opcional: setQuestions([]) para limpar mocks/dados antigos
-      } finally {
-         setIsLoadingQuestions(false)
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            let errorInfo;
+            try {
+              errorInfo = JSON.parse(errorText);
+            } catch (e) {
+              errorInfo = { error: errorText || 'Resposta não disponível' };
+            }
+            
+            const errorMessage = `Erro ao buscar perguntas: ${response.status} - ${response.statusText}`;
+            console.error(errorMessage, errorInfo);
+            
+            throw new Error(`${errorMessage}. Detalhes: ${JSON.stringify(errorInfo)}`);
+          }
+          
+          const data: Question[] = await response.json();
+          
+          console.log(`[DEBUG] API retornou ${data.length} perguntas para categoria "${ticketCategory}":`, data);
+          
+          // Sucesso! Saímos do loop
+          
+          // Ordenar por 'order' (API já deve retornar ordenado, mas é bom garantir)
+          data.sort((a, b) => a.order - b.order);
+
+          setQuestions(data);
+
+          // Encontrar o ID da pergunta de identificação
+          const idQ = data.find(q => q.text === IDENTIFICATION_QUESTION_TEXT)?._id || null;
+          setIdentificationQuestionId(idQ);
+          console.log('[useEffect] identificationQuestionId encontrado:', idQ);
+          if (ticketType === TicketType.DENUNCIA && !idQ) {
+              console.warn(`Pergunta de identificação ("${IDENTIFICATION_QUESTION_TEXT}") não encontrada para a categoria "${ticketCategory}". Nome/Email serão mostrados por padrão.`);
+          }
+
+          // Inicializar perguntas ativas com todas as perguntas, exceto as que estão em um fluxo de pulo
+          const initialActiveQuestions = new Set<string>();
+          data.forEach(question => {
+            // Adicionar a pergunta de identificação sempre
+            if (question._id === idQ) {
+              initialActiveQuestions.add(question._id);
+              return;
+            }
+            
+            // Verificar se a pergunta está no fluxo de pulo de outra pergunta
+            const isPartOfSkipFlow = data.some(q => 
+              q.options?.some(opt => 
+                opt.nextQuestionId === question._id || 
+                (opt.nextQuestionsIds && opt.nextQuestionsIds.includes(question._id))
+              )
+            );
+            
+            // Se não for parte de um fluxo de pulo, adicionar como pergunta ativa inicial
+            if (!isPartOfSkipFlow) {
+              initialActiveQuestions.add(question._id);
+            }
+          });
+          
+          setActiveQuestionIds(initialActiveQuestions);
+
+          // Pré-registrar campos e setar defaults
+          const defaultAnswers: Record<string, any> = {}
+          data.forEach(q => {
+              if (q._id === idQ && q.type === QuestionType.RADIO) {
+                  // Encontrar a opção "NAO" e usar seu texto
+                  const naoOption = q.options?.find(opt => opt.text === 'NAO');
+                  defaultAnswers[q._id] = naoOption?.text || 'NAO';
+              } else if (q.type === QuestionType.CHECKBOX) {
+                  defaultAnswers[q._id] = []; // Array vazio para checkbox
+              } else {
+                  defaultAnswers[q._id] = '';
+              }
+          });
+          form.reset({ 
+              ...form.getValues(), 
+              answers: defaultAnswers 
+          }, { keepDefaultValues: true });
+
+          // Sucesso, saímos da função
+          break;
+          
+        } catch (error) {
+          console.error(`Tentativa ${attempts} falhou:`, error);
+          lastError = error;
+          
+          // Se não for a última tentativa, esperar antes de tentar novamente
+          if (attempts < MAX_RETRIES) {
+            const waitTime = Math.pow(2, attempts) * 1000; // Backoff exponencial: 2s, 4s, 8s...
+            console.log(`Aguardando ${waitTime/1000}s antes da próxima tentativa...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          }
+        }
       }
+      
+      // Se chegamos aqui e ainda temos um lastError, significa que todas as tentativas falharam
+      if (lastError) {
+        console.error("Todas as tentativas de buscar perguntas falharam:", lastError);
+        setLoadError(lastError instanceof Error 
+          ? lastError.message 
+          : "Não foi possível buscar as perguntas após várias tentativas."
+        );
+        toast.error("Erro ao carregar formulário", {
+          description: lastError instanceof Error 
+            ? lastError.message 
+            : "Não foi possível buscar as perguntas após várias tentativas."
+        });
+      }
+      
+      setIsLoadingQuestions(false);
     }
     if (ticketCategory) {
         fetchQuestions()
@@ -489,6 +545,30 @@ export function DynamicQuestionForm({
     activeQuestionIds.has(q._id) && 
     q._id !== identificationQuestionId
   ).sort((a, b) => a.order - b.order);
+
+  // Se houver erro de carregamento, exibir o componente de erro
+  if (loadError) {
+    return (
+      <QuestionLoadingError 
+        message={loadError}
+        onRetry={() => {
+          if (ticketCategory) {
+            fetchQuestions();
+          }
+        }}
+      />
+    );
+  }
+
+  // Se estiver carregando, mostrar o indicador de carregamento
+  if (isLoadingQuestions) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
+        <p className="ml-2">Carregando formulário...</p>
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>

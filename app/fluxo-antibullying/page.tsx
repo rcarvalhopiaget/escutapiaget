@@ -100,15 +100,9 @@ export default function AntiBullyingFormPage() {
         <div className="space-y-6 mb-8"> 
           <div className="bg-red-50 p-6 rounded-lg border border-red-100">
             <h2 className="text-xl font-semibold text-red-800 mb-2">Denúncia de Bullying</h2>
-            <p className="text-red-700 mb-4">
+            <p className="text-red-700">
               Todas as denúncias de bullying são tratadas com prioridade e confidencialidade por nossa equipe. 
               Sua denúncia será analisada pela coordenação pedagógica e respondida em até 48 horas.
-            </p>
-            <p className="text-red-700">
-              Para fazer uma denúncia, entre em contato diretamente com nossa coordenadora através do e-mail: 
-              <a href="mailto:antibullying@piaget.com.br" className="font-medium underline ml-1">
-                antibullying@piaget.com.br
-              </a>
             </p>
           </div>
 

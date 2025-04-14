@@ -65,6 +65,19 @@ export async function createTicket(data: TicketFormData) {
       }).catch(err => 
         console.error('Falha ao enviar notificação por email:', err)
       )
+    } else {
+      // Mesmo sem email do usuário, enviar para o departamento jurídico
+      sendTicketNotification({
+        protocol,
+        type: data.type,
+        category: data.category,
+        name: data.name || 'Não informado',
+        email: '', // Email do usuário vazio
+        createdAt: now,
+        message: data.message
+      }).catch(err => 
+        console.error('Falha ao enviar notificação por email (jurídico):', err)
+      )
     }
     
     return result

@@ -6,37 +6,77 @@ import { QuestionType } from '@/app/types/question'; // Importar enum para valid
 
 // GET - Listar perguntas filtradas por categoria e/ou tipo
 export async function GET(request: Request) {
-  // Extrair query parameters da URL
-  const { searchParams } = new URL(request.url);
-  const category = searchParams.get('category');
-  const type = searchParams.get('type'); // Embora o modelo atual use apenas category
-
-  // Construir o filtro MongoDB
-  const filter: any = {};
-  if (category) {
-    // Incluir perguntas da categoria específica E perguntas aplicáveis a 'all'
-    filter.$or = [
-        { category: category }, 
-        { category: 'all' }
-    ];
-  }
-  // Poderíamos adicionar filtro por `type` aqui se o modelo Question tivesse esse campo.
-  // Ex: if (type) filter.type = type;
-  
-  // Permitir busca sem filtro (retorna todas) se nenhum parâmetro for passado?
-  // Se quisermos exigir pelo menos um filtro, podemos adicionar uma verificação aqui.
-  // if (!category && !type) {
-  //   return NextResponse.json({ error: 'Parâmetro de filtro (category ou type) obrigatório' }, { status: 400 });
-  // }
-
   try {
-    await dbConnect()
-    // Buscar perguntas que correspondem ao filtro E ordenar por 'order'
-    const questions = await Question.find(filter).sort({ order: 1 }).lean()
-    return NextResponse.json(questions, { status: 200 })
+    // Extrair query parameters da URL
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+    const type = searchParams.get('type'); // Embora o modelo atual use apenas category
+
+    console.log(`[API Questions] Iniciando busca - category: ${category}, type: ${type}`);
+
+    // Se a categoria não for fornecida, retornar erro para evitar busca desnecessária
+    if (!category) {
+      console.log('[API Questions] Erro: Parâmetro category não fornecido');
+      return NextResponse.json({ error: 'Parâmetro category é obrigatório' }, { status: 400 });
+    }
+
+    // Construir o filtro MongoDB
+    const filter: any = {};
+    if (category) {
+      // Incluir perguntas da categoria específica E perguntas aplicáveis a 'all'
+      filter.$or = [
+          { category: category }, 
+          { category: 'all' }
+      ];
+    }
+
+    console.log(`[API Questions] Conectando ao MongoDB com filtro: ${JSON.stringify(filter)}`);
+    
+    try {
+      // Conectar ao MongoDB
+      await dbConnect();
+      
+      console.log('[API Questions] Conexão com MongoDB estabelecida, buscando perguntas...');
+
+      // Buscar perguntas que correspondem ao filtro E ordenar por 'order'
+      const questions = await Question.find(filter).sort({ order: 1 }).lean();
+      
+      console.log(`[API Questions] Perguntas encontradas: ${questions.length}`);
+
+      // Retornar as perguntas encontradas
+      return NextResponse.json(questions, { status: 200 });
+    } catch (dbError) {
+      console.error('[API Questions] Erro de conexão com o MongoDB:', dbError);
+      return NextResponse.json({
+        error: 'Erro ao conectar com o banco de dados',
+        details: dbError instanceof Error ? dbError.message : 'Erro desconhecido de conexão',
+        connectionError: true
+      }, { status: 500 });
+    }
   } catch (error) {
-    console.error('Erro ao buscar perguntas públicas:', error)
-    return NextResponse.json({ message: 'Erro interno do servidor ao buscar perguntas.' }, { status: 500 })
+    console.error('[API Questions] Erro ao buscar perguntas:', error);
+    
+    // Tratamento mais detalhado do erro
+    let errorMessage = 'Erro interno do servidor ao buscar perguntas.';
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      errorMessage = `${errorMessage} Detalhes: ${error.message}`;
+      
+      // Verificar se é um erro de conexão com o MongoDB
+      if (error.message.includes('MONGODB_URI') || error.message.includes('connect')) {
+        errorMessage = 'Erro de conexão com o banco de dados. Por favor, tente novamente mais tarde.';
+      }
+    }
+    
+    return NextResponse.json({ 
+      error: errorMessage,
+      timestamp: new Date().toISOString(),
+      requestInfo: {
+        url: request.url,
+        method: request.method
+      }
+    }, { status: statusCode });
   }
 }
 

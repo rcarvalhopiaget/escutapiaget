@@ -74,9 +74,7 @@ export function ProtocolSearch() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 my-6">
-      <h2 className="text-xl font-semibold mb-4 text-center">Consultar Protocolo</h2>
-      
+    <div className="bg-white rounded-lg shadow-sm p-6">      
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-2">
           <div className="flex space-x-2">

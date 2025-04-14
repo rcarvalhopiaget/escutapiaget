@@ -214,65 +214,66 @@ function getBaseEmailHtml(content: string): string {
  * Envia notificações relacionadas a um ticket
  */
 export async function sendTicketNotification(ticket: Ticket): Promise<SendEmailResult> {
-  if (!ticket.email) return { success: false, error: 'Email do destinatário não fornecido' };
-  
   // Identifica o tipo de ticket para personalização
   const typeInfo = ticketTypeInfo[ticket.type] || ticketTypeInfo.default;
-  const createdAtDate = new Date(ticket.createdAt);
+  const createdAtDate = typeof ticket.createdAt === 'string' 
+    ? new Date(ticket.createdAt) 
+    : ticket.createdAt;
   const formattedDate = createdAtDate.toLocaleDateString('pt-BR');
   const formattedTime = createdAtDate.toLocaleTimeString('pt-BR');
   
   try {
-    // Email para o usuário
-    const userEmailContent = `
-      <h2 style="color: ${typeInfo.color}; margin-bottom: 20px;">Seu ${typeInfo.name} foi Registrado</h2>
-      <p style="margin-bottom: 25px; font-size: 16px;">Olá ${ticket.name || 'Cliente'},</p>
-      <p style="margin-bottom: 25px; font-size: 16px;">Recebemos seu ${typeInfo.name.toLowerCase()} e já estamos trabalhando para atendê-lo da melhor forma possível.</p>
+    // Email para o usuário (apenas se houver email)
+    if (ticket.email) {
+      const userEmailContent = `
+        <h2 style="color: ${typeInfo.color}; margin-bottom: 20px;">Seu ${typeInfo.name} foi Registrado</h2>
+        <p style="margin-bottom: 25px; font-size: 16px;">Olá ${ticket.name || 'Cliente'},</p>
+        <p style="margin-bottom: 25px; font-size: 16px;">Recebemos seu ${typeInfo.name.toLowerCase()} e já estamos trabalhando para atendê-lo da melhor forma possível.</p>
+        
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f8fafc; border-radius: 8px; margin-bottom: 25px;">
+          <tr>
+            <td style="padding: 20px;">
+              <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                <tr>
+                  <td style="padding-bottom: 15px; border-bottom: 1px solid #e2e8f0;">
+                    <p style="margin: 0; font-size: 16px; font-weight: bold; color: #334155;">Detalhes do ${typeInfo.name}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 15px 0;">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                      <tr>
+                        <td width="40%" style="color: #64748b; font-size: 14px; padding-bottom: 12px;">Protocolo:</td>
+                        <td style="font-weight: bold; font-size: 14px; padding-bottom: 12px;">${ticket.protocol}</td>
+                      </tr>
+                      <tr>
+                        <td width="40%" style="color: #64748b; font-size: 14px; padding-bottom: 12px;">Tipo:</td>
+                        <td style="font-size: 14px; padding-bottom: 12px;">
+                          <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; background-color: ${typeInfo.color}1A; color: ${typeInfo.color};">${typeInfo.name}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td width="40%" style="color: #64748b; font-size: 14px; padding-bottom: 12px;">Data:</td>
+                        <td style="font-size: 14px; padding-bottom: 12px;">${formattedDate} às ${formattedTime}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        
+        <p style="margin-bottom: 10px; font-size: 16px;">Estamos comprometidos em responder ${ticket.type === 'denuncia' ? 'em até 48 horas' : 'em até 15 dias úteis'}.</p>
+        <p style="margin-bottom: 25px; font-size: 16px;">Você pode acompanhar o status do seu chamado através do protocolo informado acima.</p>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+          <p style="margin-bottom: 5px; font-size: 14px;">Atenciosamente,</p>
+          <p style="margin: 0; font-weight: bold; font-size: 16px;">Equipe Piaget</p>
+        </div>
+      `;
       
-      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f8fafc; border-radius: 8px; margin-bottom: 25px;">
-        <tr>
-          <td style="padding: 20px;">
-            <table cellpadding="0" cellspacing="0" border="0" width="100%">
-              <tr>
-                <td style="padding-bottom: 15px; border-bottom: 1px solid #e2e8f0;">
-                  <p style="margin: 0; font-size: 16px; font-weight: bold; color: #334155;">Detalhes do ${typeInfo.name}</p>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 15px 0;">
-                  <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                    <tr>
-                      <td width="40%" style="color: #64748b; font-size: 14px; padding-bottom: 12px;">Protocolo:</td>
-                      <td style="font-weight: bold; font-size: 14px; padding-bottom: 12px;">${ticket.protocol}</td>
-                    </tr>
-                    <tr>
-                      <td width="40%" style="color: #64748b; font-size: 14px; padding-bottom: 12px;">Tipo:</td>
-                      <td style="font-size: 14px; padding-bottom: 12px;">
-                        <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; background-color: ${typeInfo.color}1A; color: ${typeInfo.color}; font-weight: 500;">${typeInfo.name}</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td width="40%" style="color: #64748b; font-size: 14px; padding-bottom: 12px;">Data:</td>
-                      <td style="font-size: 14px; padding-bottom: 12px;">${formattedDate} às ${formattedTime}</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-      
-      <p style="margin-bottom: 10px; font-size: 16px;">Estamos comprometidos em responder ${ticket.type === 'denuncia' ? 'em até 48 horas' : 'em até 15 dias úteis'}.</p>
-      <p style="margin-bottom: 25px; font-size: 16px;">Você pode acompanhar o status do seu chamado através do protocolo informado acima.</p>
-      
-      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-        <p style="margin-bottom: 5px; font-size: 14px;">Atenciosamente,</p>
-        <p style="margin: 0; font-weight: bold; font-size: 16px;">Equipe Piaget</p>
-      </div>
-    `;
-    
-    const userEmailPlainText = `
+      const userEmailPlainText = `
 Seu ${typeInfo.name} foi Registrado
 
 Olá ${ticket.name || 'Cliente'},
@@ -289,17 +290,20 @@ Você pode acompanhar o status do seu chamado através do protocolo informado ac
 
 Atenciosamente,
 Equipe Piaget
-    `;
+      `;
+      
+      // Enviar email para o usuário
+      await sendEmail({
+        to: ticket.email,
+        subject: `Seu ${typeInfo.name} #${ticket.protocol} foi registrado`,
+        htmlBody: getBaseEmailHtml(userEmailContent),
+        textBody: userEmailPlainText
+      });
+      
+      console.log(`[Ticket] Email enviado para o usuário: ${ticket.email}`);
+    }
     
-    // Enviar email para o usuário
-    await sendEmail({
-      to: ticket.email,
-      subject: `Seu ${typeInfo.name} #${ticket.protocol} foi registrado`,
-      htmlBody: getBaseEmailHtml(userEmailContent),
-      textBody: userEmailPlainText
-    });
-    
-    // Email para os administradores
+    // Email para os administradores e departamento jurídico (sempre)
     const adminEmailContent = `
       <h2 style="color: #ef4444; margin-bottom: 20px;">Novo ${typeInfo.name} Registrado</h2>
       <p style="margin-bottom: 25px; font-size: 16px;">Um novo ${typeInfo.name.toLowerCase()} foi registrado no sistema e requer sua atenção.</p>
@@ -323,7 +327,7 @@ Equipe Piaget
                     <tr>
                       <td width="40%" style="color: #64748b; font-size: 14px; padding-bottom: 12px;">Tipo:</td>
                       <td style="font-size: 14px; padding-bottom: 12px;">
-                        <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; background-color: ${typeInfo.color}1A; color: ${typeInfo.color}; font-weight: 500;">${typeInfo.name}</span>
+                        <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; background-color: ${typeInfo.color}1A; color: ${typeInfo.color};">${typeInfo.name}</span>
                       </td>
                     </tr>
                     <tr>
@@ -355,6 +359,13 @@ Equipe Piaget
       </div>
       
       <p style="margin-bottom: 10px; font-size: 14px; color: #64748b;">Este ${typeInfo.name.toLowerCase()} deve ser respondido ${ticket.type === 'denuncia' ? 'em até 48 horas' : 'em até 15 dias úteis'}.</p>
+      
+      ${ticket.message ? `
+      <div style="margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+        <h3 style="color: #334155; font-size: 16px; margin-bottom: 10px;">Conteúdo da Mensagem:</h3>
+        <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; white-space: pre-line; font-family: monospace;">${ticket.message}</div>
+      </div>
+      ` : ''}
     `;
     
     const adminEmailPlainText = `
@@ -370,21 +381,32 @@ Detalhes do ${typeInfo.name}:
 - Email: ${ticket.email || 'Não informado'}
 - Data: ${formattedDate} às ${formattedTime}
 
+${ticket.message ? `
+Conteúdo da Mensagem:
+${ticket.message}
+` : ''}
+
 Este ${typeInfo.name.toLowerCase()} deve ser respondido ${ticket.type === 'denuncia' ? 'em até 48 horas' : 'em até 15 dias úteis'}.
 
 Acesse o painel administrativo para responder:
 ${process.env.NEXT_PUBLIC_APP_URL || 'https://escuta.piaget.com.br'}/admin/chamados
     `;
     
-    // Enviar email para os administradores
+    // Lista de destinatários administrativos
+    const adminRecipients = [
+      process.env.ADMIN_EMAIL || 'contato@piaget.com.br',
+      'juridico@jpiaget.com.br' // Adicionando o email do departamento jurídico para todos os chamados
+    ];
+    
+    // Enviar email para os administradores e departamento jurídico
     await sendEmail({
-      to: process.env.ADMIN_EMAIL || 'contato@piaget.com.br',
+      to: adminRecipients,
       subject: `Novo ${typeInfo.name} #${ticket.protocol} - Requer Atenção`,
       htmlBody: getBaseEmailHtml(adminEmailContent),
       textBody: adminEmailPlainText
     });
     
-    console.log(`[Ticket] Notificações de email enviadas para o ticket ${ticket.protocol}`);
+    console.log(`[Ticket] Notificações de email enviadas para o ticket ${ticket.protocol} (administradores e departamento jurídico)`);
     return { success: true };
     
   } catch (error) {
