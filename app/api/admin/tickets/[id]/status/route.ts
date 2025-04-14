@@ -18,8 +18,10 @@ export async function PATCH(
       )
     }
     
+    // Obter os parâmetros de forma assíncrona
+    const resolvedParams = await params
     // Extrair ID do ticket e dados da requisição
-    const id = params.id
+    const id = resolvedParams.id
     const { status, internalComments } = await request.json()
     
     // Validar o status recebido

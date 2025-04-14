@@ -17,8 +17,10 @@ export async function POST(
       )
     }
     
+    // Obter os parâmetros de forma assíncrona
+    const resolvedParams = await params
     // Extrair ID do ticket e dados da requisição
-    const id = params.id
+    const id = resolvedParams.id
     const { response } = await request.json()
     
     // Validar a resposta recebida
