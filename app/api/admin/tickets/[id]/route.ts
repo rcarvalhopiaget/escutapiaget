@@ -108,9 +108,13 @@ export async function GET(
     
     console.log(`[API] Chamado encontrado: ${id}`)
     
+    // Converter para objeto e adicionar o id
+    const ticketObj = ticket.toObject()
+    ticketObj.id = ticketObj._id.toString()
+    
     // Retornar o ticket
     return NextResponse.json(
-      { success: true, ticket },
+      { success: true, ticket: ticketObj },
       { status: 200 }
     )
   } catch (error) {
@@ -198,6 +202,10 @@ export async function PUT(
       { new: true }
     )
     
+    // Converter para objeto e adicionar o id
+    const ticketObj = updatedTicket.toObject()
+    ticketObj.id = ticketObj._id.toString()
+    
     console.log(`[API] Chamado atualizado: ${id}`)
     
     // Retornar o chamado atualizado
@@ -205,7 +213,7 @@ export async function PUT(
       { 
         success: true, 
         message: 'Chamado atualizado com sucesso',
-        ticket: updatedTicket 
+        ticket: ticketObj 
       },
       { status: 200 }
     )

@@ -21,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { TicketStatus, TicketType } from '@/app/types/ticket'
+import { DashboardCharts } from '@/app/components/dashboard/dashboard-charts'
 
 // Definição da interface para o tipo de ticket usado no estado
 interface TicketData {
@@ -320,154 +321,37 @@ export default function Dashboard() {
               />
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-              {/* Coluna de gráficos - ocupa 2/3 do espaço */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Gráfico de tendência */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center">
-                      <TrendingUp className="h-5 w-5 mr-2 text-blue-500" /> 
-                      Tendência de Chamados
-                    </CardTitle>
-                    <CardDescription>
-                      Evolução dos chamados nos últimos 30 dias
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[250px] flex flex-col justify-center items-center text-center p-6">
-                      <BarChart3 className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                      <p className="text-muted-foreground">
-                        Visualização de gráfico será implementada com a biblioteca de sua preferência (Recharts, Chart.js, etc)
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              
-                {/* Distribuição por tipos */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center">
-                      <BarChart3 className="h-5 w-5 mr-2 text-blue-500" /> 
-                      Distribuição por Categoria
-                    </CardTitle>
-                    <CardDescription>
-                      Quantidade de chamados por tipo
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Reclamações</span>
-                          <span className="text-sm font-medium">
-                            {tickets.filter(t => t.type === TicketType.RECLAMACAO).length}
-                          </span>
-                        </div>
-                        <Progress 
-                          value={tickets.filter(t => t.type === TicketType.RECLAMACAO).length} 
-                          max={tickets.length || 1} 
-                          className="h-2 bg-blue-100" 
-                          indicatorClassName="bg-blue-500" 
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Denúncias</span>
-                          <span className="text-sm font-medium">
-                            {tickets.filter(t => t.type === TicketType.DENUNCIA).length}
-                          </span>
-                        </div>
-                        <Progress 
-                          value={tickets.filter(t => t.type === TicketType.DENUNCIA).length} 
-                          max={tickets.length || 1} 
-                          className="h-2 bg-red-100" 
-                          indicatorClassName="bg-red-500" 
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Dúvidas</span>
-                          <span className="text-sm font-medium">
-                            {tickets.filter(t => t.type === TicketType.DUVIDA).length}
-                          </span>
-                        </div>
-                        <Progress 
-                          value={tickets.filter(t => t.type === TicketType.DUVIDA).length} 
-                          max={tickets.length || 1} 
-                          className="h-2 bg-amber-100" 
-                          indicatorClassName="bg-amber-500" 
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Sugestões</span>
-                          <span className="text-sm font-medium">
-                            {tickets.filter(t => t.type === TicketType.SUGESTAO).length}
-                          </span>
-                        </div>
-                        <Progress 
-                          value={tickets.filter(t => t.type === TicketType.SUGESTAO).length} 
-                          max={tickets.length || 1} 
-                          className="h-2 bg-green-100" 
-                          indicatorClassName="bg-green-500" 
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              {/* Coluna de atividades recentes - ocupa 1/3 do espaço */}
-              <div className="space-y-6">
-                <Card className="h-full">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center">
-                      <CalendarClock className="h-5 w-5 mr-2 text-blue-500" /> 
-                      Atividades Recentes
-                    </CardTitle>
-                    <CardDescription>
-                      Últimos chamados registrados
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {tickets.map((ticket) => (
-                        <RecentActivity 
-                          key={ticket.id}
-                          date={ticket.createdAt}
-                          title={ticket.title}
-                          message={ticket.message}
-                          status={ticket.status}
-                          type={ticket.type}
-                          protocol={ticket.protocol}
-                        />
-                      ))}
-                    </div>
-                    
-                    <div className="mt-4 text-center">
-                      <a 
-                        href="/admin/chamados" 
-                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                      >
-                        Ver todos os chamados
-                      </a>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+            {/* Seção de Gráficos */}
+            <div className="grid gap-4 md:gap-6 grid-cols-1 mt-6">
+              <DashboardCharts tickets={tickets} />
             </div>
             
-            {/* Barra de status */}
-            <div className="mt-6">
-              <Card className="bg-gray-50 border-dashed">
-                <CardContent className="p-4 text-center">
-                  <p className="text-xs text-muted-foreground">
-                    Última atualização: {new Date().toLocaleString('pt-BR')} • Usuário: {session.user?.name || 'Admin'} • Versão: 1.0.5
-                  </p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+              {/* Atividades recentes */}
+              <Card className="lg:col-span-3">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center">
+                    <CalendarClock className="h-5 w-5 mr-2 text-blue-500" /> 
+                    Atividades Recentes
+                  </CardTitle>
+                  <CardDescription>
+                    Últimos chamados registrados no sistema
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {tickets.slice(0, 5).map(ticket => (
+                      <RecentActivity 
+                        key={ticket.id}
+                        date={ticket.createdAt}
+                        title={ticket.title}
+                        message={ticket.message}
+                        status={ticket.status}
+                        type={ticket.type}
+                        protocol={ticket.protocol}
+                      />
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </div>
